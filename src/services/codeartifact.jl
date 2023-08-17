@@ -1810,7 +1810,7 @@ CodeArtifact User Guide.
 - `domain`: The name of the domain that contains the repository that contains the package
   version to publish.
 - `format`: A format that specifies the type of the package version with the requested
-  asset file.
+  asset file. The only supported value is generic.
 - `package`: The name of the package version to publish.
 - `repository`: The name of the repository that the package version will be published to.
 - `version`: The package version to publish (for example, 3.5.2).

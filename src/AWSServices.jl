@@ -28,6 +28,7 @@ const apigatewayv2 = AWS.RestJSONService("apigateway", "apigateway", "2018-11-29
 const app_mesh = AWS.RestJSONService("appmesh", "appmesh", "2019-01-25")
 const appconfig = AWS.RestJSONService("appconfig", "appconfig", "2019-10-09")
 const appconfigdata = AWS.RestJSONService("appconfig", "appconfigdata", "2021-11-11")
+const appfabric = AWS.RestJSONService("appfabric", "appfabric", "2023-05-19")
 const appflow = AWS.RestJSONService("appflow", "appflow", "2020-08-23")
 const appintegrations = AWS.RestJSONService(
     "app-integrations", "app-integrations", "2020-07-29"
@@ -279,6 +280,9 @@ const emr = AWS.JSONService(
 )
 const emr_containers = AWS.RestJSONService("emr-containers", "emr-containers", "2020-10-01")
 const emr_serverless = AWS.RestJSONService("emr-serverless", "emr-serverless", "2021-07-13")
+const entityresolution = AWS.RestJSONService(
+    "entityresolution", "entityresolution", "2018-05-10"
+)
 const eventbridge = AWS.JSONService("events", "events", "2015-10-07", "1.1", "AWSEvents")
 const evidently = AWS.RestJSONService("evidently", "evidently", "2021-02-01")
 const finspace = AWS.RestJSONService("finspace", "finspace", "2021-03-12")
@@ -449,6 +453,9 @@ const macie2 = AWS.RestJSONService("macie2", "macie2", "2020-01-01")
 const managedblockchain = AWS.RestJSONService(
     "managedblockchain", "managedblockchain", "2018-09-24"
 )
+const managedblockchain_query = AWS.RestJSONService(
+    "managedblockchain-query", "managedblockchain-query", "2023-05-04"
+)
 const marketplace_catalog = AWS.RestJSONService(
     "aws-marketplace", "catalog.marketplace", "2018-09-17"
 )
@@ -482,6 +489,9 @@ const mediastore = AWS.JSONService(
 )
 const mediastore_data = AWS.RestJSONService("mediastore", "data.mediastore", "2017-09-01")
 const mediatailor = AWS.RestJSONService("mediatailor", "api.mediatailor", "2018-04-23")
+const medical_imaging = AWS.RestJSONService(
+    "medical-imaging", "medical-imaging", "2023-07-19"
+)
 const memorydb = AWS.JSONService(
     "memorydb", "memory-db", "2021-01-01", "1.1", "AmazonMemoryDB"
 )

@@ -1847,6 +1847,10 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
 - `"Tags"`: Adds one or more custom tags, each in the form of a key:value pair, to a new
   transcription job at the time you start this new job. To learn more about using tags with
   Amazon Transcribe, refer to Tagging resources.
+- `"ToxicityDetection"`: Enables toxic speech detection in your transcript. If you include
+  ToxicityDetection in your request, you must also include ToxicityCategories. For
+  information on the types of toxic speech Amazon Transcribe can detect, see Detecting toxic
+  speech.
 """
 function start_transcription_job(
     Media, TranscriptionJobName; aws_config::AbstractAWSConfig=global_aws_config()

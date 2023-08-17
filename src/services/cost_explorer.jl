@@ -1112,6 +1112,47 @@ function get_rightsizing_recommendation(
 end
 
 """
+    get_savings_plan_purchase_recommendation_details(recommendation_detail_id)
+    get_savings_plan_purchase_recommendation_details(recommendation_detail_id, params::Dict{String,<:Any})
+
+Retrieves the details for a Savings Plan recommendation. These details include the hourly
+data-points that construct the new cost, coverage, and utilization charts.
+
+# Arguments
+- `recommendation_detail_id`: The ID that is associated with the Savings Plan
+  recommendation.
+
+"""
+function get_savings_plan_purchase_recommendation_details(
+    RecommendationDetailId; aws_config::AbstractAWSConfig=global_aws_config()
+)
+    return cost_explorer(
+        "GetSavingsPlanPurchaseRecommendationDetails",
+        Dict{String,Any}("RecommendationDetailId" => RecommendationDetailId);
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function get_savings_plan_purchase_recommendation_details(
+    RecommendationDetailId,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return cost_explorer(
+        "GetSavingsPlanPurchaseRecommendationDetails",
+        Dict{String,Any}(
+            mergewith(
+                _merge,
+                Dict{String,Any}("RecommendationDetailId" => RecommendationDetailId),
+                params,
+            ),
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
     get_savings_plans_coverage(time_period)
     get_savings_plans_coverage(time_period, params::Dict{String,<:Any})
 
@@ -1869,7 +1910,9 @@ end
     update_anomaly_subscription(subscription_arn)
     update_anomaly_subscription(subscription_arn, params::Dict{String,<:Any})
 
-Updates an existing cost anomaly monitor subscription.
+Updates an existing cost anomaly subscription. Specify the fields that you want to update.
+Omitted fields are unchanged.  The JSON below describes the generic construct for each
+type. See Request Parameters for possible values as they apply to AnomalySubscription.
 
 # Arguments
 - `subscription_arn`: A cost anomaly subscription Amazon Resource Name (ARN).
@@ -1883,20 +1926,22 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
 - `"Threshold"`: (deprecated) The update to the threshold value for receiving
   notifications.  This field has been deprecated. To update a threshold, use
   ThresholdExpression. Continued use of Threshold will be treated as shorthand syntax for a
-  ThresholdExpression.
+  ThresholdExpression. You can specify either Threshold or ThresholdExpression, but not both.
 - `"ThresholdExpression"`: The update to the Expression object used to specify the
   anomalies that you want to generate alerts for. This supports dimensions and nested
   expressions. The supported dimensions are ANOMALY_TOTAL_IMPACT_ABSOLUTE and
-  ANOMALY_TOTAL_IMPACT_PERCENTAGE. The supported nested expression types are AND and OR. The
-  match option GREATER_THAN_OR_EQUAL is required. Values must be numbers between 0 and
-  10,000,000,000. The following are examples of valid ThresholdExpressions:   Absolute
-  threshold: { \"Dimensions\": { \"Key\": \"ANOMALY_TOTAL_IMPACT_ABSOLUTE\",
-  \"MatchOptions\": [ \"GREATER_THAN_OR_EQUAL\" ], \"Values\": [ \"100\" ] } }    Percentage
-  threshold: { \"Dimensions\": { \"Key\": \"ANOMALY_TOTAL_IMPACT_PERCENTAGE\",
-  \"MatchOptions\": [ \"GREATER_THAN_OR_EQUAL\" ], \"Values\": [ \"100\" ] } }     AND two
-  thresholds together: { \"And\": [ { \"Dimensions\": { \"Key\":
+  ANOMALY_TOTAL_IMPACT_PERCENTAGE, corresponding to an anomaly’s TotalImpact and
+  TotalImpactPercentage, respectively (see Impact for more details). The supported nested
+  expression types are AND and OR. The match option GREATER_THAN_OR_EQUAL is required. Values
+  must be numbers between 0 and 10,000,000,000 in string format. You can specify either
+  Threshold or ThresholdExpression, but not both. The following are examples of valid
+  ThresholdExpressions:   Absolute threshold: { \"Dimensions\": { \"Key\":
   \"ANOMALY_TOTAL_IMPACT_ABSOLUTE\", \"MatchOptions\": [ \"GREATER_THAN_OR_EQUAL\" ],
-  \"Values\": [ \"100\" ] } }, { \"Dimensions\": { \"Key\":
+  \"Values\": [ \"100\" ] } }    Percentage threshold: { \"Dimensions\": { \"Key\":
+  \"ANOMALY_TOTAL_IMPACT_PERCENTAGE\", \"MatchOptions\": [ \"GREATER_THAN_OR_EQUAL\" ],
+  \"Values\": [ \"100\" ] } }     AND two thresholds together: { \"And\": [ { \"Dimensions\":
+  { \"Key\": \"ANOMALY_TOTAL_IMPACT_ABSOLUTE\", \"MatchOptions\": [ \"GREATER_THAN_OR_EQUAL\"
+  ], \"Values\": [ \"100\" ] } }, { \"Dimensions\": { \"Key\":
   \"ANOMALY_TOTAL_IMPACT_PERCENTAGE\", \"MatchOptions\": [ \"GREATER_THAN_OR_EQUAL\" ],
   \"Values\": [ \"100\" ] } } ] }     OR two thresholds together: { \"Or\": [ {
   \"Dimensions\": { \"Key\": \"ANOMALY_TOTAL_IMPACT_ABSOLUTE\", \"MatchOptions\": [

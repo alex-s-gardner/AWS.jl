@@ -1415,6 +1415,49 @@ function list_studios(
 end
 
 """
+    list_supported_instance_types(release_label)
+    list_supported_instance_types(release_label, params::Dict{String,<:Any})
+
+A list of the instance types that Amazon EMR supports. You can filter the list by Amazon
+Web Services Region and Amazon EMR release.
+
+# Arguments
+- `release_label`: The Amazon EMR release label determines the versions of open-source
+  application packages that Amazon EMR has installed on the cluster. Release labels are in
+  the format emr-x.x.x, where x.x.x is an Amazon EMR release number such as emr-6.10.0. For
+  more information about Amazon EMR releases and their included application versions and
+  features, see the  Amazon EMR Release Guide .
+
+# Optional Parameters
+Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"Marker"`: The pagination token that marks the next set of results to retrieve.
+"""
+function list_supported_instance_types(
+    ReleaseLabel; aws_config::AbstractAWSConfig=global_aws_config()
+)
+    return emr(
+        "ListSupportedInstanceTypes",
+        Dict{String,Any}("ReleaseLabel" => ReleaseLabel);
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function list_supported_instance_types(
+    ReleaseLabel,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return emr(
+        "ListSupportedInstanceTypes",
+        Dict{String,Any}(
+            mergewith(_merge, Dict{String,Any}("ReleaseLabel" => ReleaseLabel), params)
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
     modify_cluster(cluster_id)
     modify_cluster(cluster_id, params::Dict{String,<:Any})
 

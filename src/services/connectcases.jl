@@ -151,7 +151,7 @@ Creates a domain, which is a container for all case data, such as cases, fields,
 and layouts. Each Amazon Connect instance can be associated with only one Cases domain.
 This will not associate your connect instance to Cases domain. Instead, use the Amazon
 Connect CreateIntegrationAssociation API. You need specific IAM permissions to successfully
-associate the Cases domain. For more information, see Onboard to Cases.
+associate the Cases domain. For more information, see Onboard to Cases.  &lt;/important&gt;
 
 # Arguments
 - `name`: The name for your Cases domain. It must be unique for your Amazon Web Services
@@ -371,7 +371,11 @@ end
     delete_domain(domain_id)
     delete_domain(domain_id, params::Dict{String,<:Any})
 
-Deletes a domain.
+Deletes a Cases domain.  &lt;note&gt; &lt;p&gt;After deleting your domain you must
+disassociate the deleted domain from your Amazon Connect instance with another API call
+before being able to use Cases again with this Amazon Connect instance. See &lt;a
+href=&quot;https://docs.aws.amazon.com/connect/latest/APIReference/API_DeleteIntegrationAsso
+ciation.html&quot;&gt;DeleteIntegrationAssociation&lt;/a&gt;.&lt;/p&gt; &lt;/note&gt;
 
 # Arguments
 - `domain_id`: The unique identifier of the Cases domain.

@@ -72,10 +72,13 @@ Add endpoints to an endpoint group. The AddEndpoints API operation is the recomm
 option for adding endpoints. The alternative options are to add endpoints when you create
 an endpoint group (with the CreateEndpointGroup API) or when you update an endpoint group
 (with the UpdateEndpointGroup API).  There are two advantages to using AddEndpoints to add
-endpoints:   It's faster, because Global Accelerator only has to resolve the new endpoints
-that you're adding.   It's more convenient, because you don't need to specify all of the
-current endpoints that are already in the endpoint group in addition to the new endpoints
-that you want to add.
+endpoints in Global Accelerator:   It's faster, because Global Accelerator only has to
+resolve the new endpoints that you're adding, rather than resolving new and existing
+endpoints.   It's more convenient, because you don't need to specify the current endpoints
+that are already in the endpoint group, in addition to the new endpoints that you want to
+add.   For information about endpoint types and requirements for endpoints that you can add
+to Global Accelerator, see  Endpoints for standard accelerators in the Global Accelerator
+Developer Guide.
 
 # Arguments
 - `endpoint_configurations`: The list of endpoint objects.
@@ -232,7 +235,7 @@ connections and direct traffic to one or more endpoint groups, each of which inc
 endpoints, such as Network Load Balancers.   Global Accelerator is a global service that
 supports endpoints in multiple Amazon Web Services Regions but you must specify the US West
 (Oregon) Region to create, update, or otherwise work with accelerators. That is, for
-example, specify --region us-west-2 on AWS CLI commands.
+example, specify --region us-west-2 on Amazon Web Services CLI commands.
 
 # Arguments
 - `idempotency_token`: A unique, case-sensitive identifier that you provide to ensure the
@@ -306,7 +309,7 @@ to receive traffic, or to specify individual port mappings that can receive traf
 the  AllowCustomRoutingTraffic operation.  Global Accelerator is a global service that
 supports endpoints in multiple Amazon Web Services Regions but you must specify the US West
 (Oregon) Region to create, update, or otherwise work with accelerators. That is, for
-example, specify --region us-west-2 on AWS CLI commands.
+example, specify --region us-west-2 on Amazon Web Services CLI commands.
 
 # Arguments
 - `idempotency_token`: A unique, case-sensitive identifier that you provide to ensure the
@@ -498,7 +501,9 @@ end
 
 Create an endpoint group for the specified listener. An endpoint group is a collection of
 endpoints in one Amazon Web Services Region. A resource must be valid and active when you
-add it as an endpoint.
+add it as an endpoint. For more information about endpoint types and requirements for
+endpoints that you can add to Global Accelerator, see  Endpoints for standard accelerators
+in the Global Accelerator Developer Guide.
 
 # Arguments
 - `endpoint_group_region`: The Amazon Web Services Region where the endpoint group is
@@ -1920,10 +1925,18 @@ end
     update_accelerator(accelerator_arn)
     update_accelerator(accelerator_arn, params::Dict{String,<:Any})
 
-Update an accelerator.   Global Accelerator is a global service that supports endpoints in
-multiple Amazon Web Services Regions but you must specify the US West (Oregon) Region to
-create, update, or otherwise work with accelerators. That is, for example, specify --region
-us-west-2 on AWS CLI commands.
+Update an accelerator to make changes, such as the following:    Change the name of the
+accelerator.   Disable the accelerator so that it no longer accepts or routes traffic, or
+so that you can delete it.   Enable the accelerator, if it is disabled.   Change the IP
+address type to dual-stack if it is IPv4, or change the IP address type to IPv4 if it's
+dual-stack.   Be aware that static IP addresses remain assigned to your accelerator for as
+long as it exists, even if you disable the accelerator and it no longer accepts or routes
+traffic. However, when you delete the accelerator, you lose the static IP addresses that
+are assigned to it, so you can no longer route traffic by using them.  Global Accelerator
+is a global service that supports endpoints in multiple Amazon Web Services Regions but you
+must specify the US West (Oregon) Region to create, update, or otherwise work with
+accelerators. That is, for example, specify --region us-west-2 on Amazon Web Services CLI
+commands.
 
 # Arguments
 - `accelerator_arn`: The Amazon Resource Name (ARN) of the accelerator to update.

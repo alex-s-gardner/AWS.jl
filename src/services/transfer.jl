@@ -112,15 +112,24 @@ certificate, and other attributes. The partner is identified with the PartnerPro
 the AS2 process is identified with the LocalProfileId.
 
 # Arguments
-- `access_role`: With AS2, you can send files by calling StartFileTransfer and specifying
-  the file paths in the request parameter, SendFilePaths. We use the file’s parent
-  directory (for example, for --send-file-paths /bucket/dir/file.txt, parent directory is
-  /bucket/dir/) to temporarily store a processed AS2 message file, store the MDN when we
-  receive them from the partner, and write a final JSON file containing relevant metadata of
-  the transmission. So, the AccessRole needs to provide read and write access to the parent
-  directory of the file location used in the StartFileTransfer request. Additionally, you
-  need to provide read and write access to the parent directory of the files that you intend
-  to send with StartFileTransfer.
+- `access_role`: Connectors are used to send files using either the AS2 or SFTP protocol.
+  For the access role, provide the Amazon Resource Name (ARN) of the Identity and Access
+  Management role to use.  For AS2 connectors  With AS2, you can send files by calling
+  StartFileTransfer and specifying the file paths in the request parameter, SendFilePaths. We
+  use the file’s parent directory (for example, for --send-file-paths /bucket/dir/file.txt,
+  parent directory is /bucket/dir/) to temporarily store a processed AS2 message file, store
+  the MDN when we receive them from the partner, and write a final JSON file containing
+  relevant metadata of the transmission. So, the AccessRole needs to provide read and write
+  access to the parent directory of the file location used in the StartFileTransfer request.
+  Additionally, you need to provide read and write access to the parent directory of the
+  files that you intend to send with StartFileTransfer. If you are using Basic authentication
+  for your AS2 connector, the access role requires the secretsmanager:GetSecretValue
+  permission for the secret. If the secret is encrypted using a customer-managed key instead
+  of the Amazon Web Services managed key in Secrets Manager, then the role also needs the
+  kms:Decrypt permission for that key.  For SFTP connectors  Make sure that the access role
+  provides read and write access to the parent directory of the file location that's used in
+  the StartFileTransfer request. Additionally, make sure that the role provides
+  secretsmanager:GetSecretValue permission to Secrets Manager.
 - `base_directory`: The landing directory (folder) for files transferred by using the AS2
   protocol. A BaseDirectory example is /DOC-EXAMPLE-BUCKET/home/mydirectory.
 - `local_profile_id`: A unique identifier for the AS2 local profile.
@@ -185,49 +194,59 @@ function create_agreement(
 end
 
 """
-    create_connector(access_role, as2_config, url)
-    create_connector(access_role, as2_config, url, params::Dict{String,<:Any})
+    create_connector(access_role, url)
+    create_connector(access_role, url, params::Dict{String,<:Any})
 
-Creates the connector, which captures the parameters for an outbound connection for the AS2
-protocol. The connector is required for sending files to an externally hosted AS2 server.
-For more details about connectors, see Create AS2 connectors.
+Creates the connector, which captures the parameters for a connection for the AS2 or SFTP
+protocol. For AS2, the connector is required for sending files to an externally hosted AS2
+server. For SFTP, the connector is required when sending files to an SFTP server or
+receiving files from an SFTP server. For more details about connectors, see Create AS2
+connectors and Create SFTP connectors.  You must specify exactly one configuration object:
+either for AS2 (As2Config) or SFTP (SftpConfig).
 
 # Arguments
-- `access_role`: With AS2, you can send files by calling StartFileTransfer and specifying
-  the file paths in the request parameter, SendFilePaths. We use the file’s parent
-  directory (for example, for --send-file-paths /bucket/dir/file.txt, parent directory is
-  /bucket/dir/) to temporarily store a processed AS2 message file, store the MDN when we
-  receive them from the partner, and write a final JSON file containing relevant metadata of
-  the transmission. So, the AccessRole needs to provide read and write access to the parent
-  directory of the file location used in the StartFileTransfer request. Additionally, you
-  need to provide read and write access to the parent directory of the files that you intend
-  to send with StartFileTransfer.
-- `as2_config`: A structure that contains the parameters for a connector object.
-- `url`: The URL of the partner's AS2 endpoint.
+- `access_role`: Connectors are used to send files using either the AS2 or SFTP protocol.
+  For the access role, provide the Amazon Resource Name (ARN) of the Identity and Access
+  Management role to use.  For AS2 connectors  With AS2, you can send files by calling
+  StartFileTransfer and specifying the file paths in the request parameter, SendFilePaths. We
+  use the file’s parent directory (for example, for --send-file-paths /bucket/dir/file.txt,
+  parent directory is /bucket/dir/) to temporarily store a processed AS2 message file, store
+  the MDN when we receive them from the partner, and write a final JSON file containing
+  relevant metadata of the transmission. So, the AccessRole needs to provide read and write
+  access to the parent directory of the file location used in the StartFileTransfer request.
+  Additionally, you need to provide read and write access to the parent directory of the
+  files that you intend to send with StartFileTransfer. If you are using Basic authentication
+  for your AS2 connector, the access role requires the secretsmanager:GetSecretValue
+  permission for the secret. If the secret is encrypted using a customer-managed key instead
+  of the Amazon Web Services managed key in Secrets Manager, then the role also needs the
+  kms:Decrypt permission for that key.  For SFTP connectors  Make sure that the access role
+  provides read and write access to the parent directory of the file location that's used in
+  the StartFileTransfer request. Additionally, make sure that the role provides
+  secretsmanager:GetSecretValue permission to Secrets Manager.
+- `url`: The URL of the partner's AS2 or SFTP endpoint.
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"As2Config"`: A structure that contains the parameters for an AS2 connector object.
 - `"LoggingRole"`: The Amazon Resource Name (ARN) of the Identity and Access Management
   (IAM) role that allows a connector to turn on CloudWatch logging for Amazon S3 events. When
   set, you can view connector activity in your CloudWatch logs.
+- `"SftpConfig"`: A structure that contains the parameters for an SFTP connector object.
 - `"Tags"`: Key-value pairs that can be used to group and search for connectors. Tags are
   metadata attached to connectors for any purpose.
 """
 function create_connector(
-    AccessRole, As2Config, Url; aws_config::AbstractAWSConfig=global_aws_config()
+    AccessRole, Url; aws_config::AbstractAWSConfig=global_aws_config()
 )
     return transfer(
         "CreateConnector",
-        Dict{String,Any}(
-            "AccessRole" => AccessRole, "As2Config" => As2Config, "Url" => Url
-        );
+        Dict{String,Any}("AccessRole" => AccessRole, "Url" => Url);
         aws_config=aws_config,
         feature_set=SERVICE_FEATURE_SET,
     )
 end
 function create_connector(
     AccessRole,
-    As2Config,
     Url,
     params::AbstractDict{String};
     aws_config::AbstractAWSConfig=global_aws_config(),
@@ -236,11 +255,7 @@ function create_connector(
         "CreateConnector",
         Dict{String,Any}(
             mergewith(
-                _merge,
-                Dict{String,Any}(
-                    "AccessRole" => AccessRole, "As2Config" => As2Config, "Url" => Url
-                ),
-                params,
+                _merge, Dict{String,Any}("AccessRole" => AccessRole, "Url" => Url), params
             ),
         );
         aws_config=aws_config,
@@ -417,6 +432,14 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   EndpointType must be VPC, and domain must be Amazon S3.
 - `"SecurityPolicyName"`: Specifies the name of the security policy that is attached to the
   server.
+- `"StructuredLogDestinations"`: Specifies the log groups to which your server logs are
+  sent. To specify a log group, you must provide the ARN for an existing log group. In this
+  case, the format of the log group is as follows:
+  arn:aws:logs:region-name:amazon-account-id:log-group:log-group-name:*  For example,
+  arn:aws:logs:us-east-1:111122223333:log-group:mytestgroup:*  If you have previously
+  specified a log group for a server, you can clear it, and in effect turn off structured
+  logging, by providing an empty value for this parameter in an update-server call. For
+  example:  update-server --server-id s-1234567890abcdef0 --structured-log-destinations
 - `"Tags"`: Key-value pairs that can be used to group and search for servers.
 - `"WorkflowDetails"`: Specifies the workflow ID for the workflow to assign and the
   execution role that's used for executing the workflow. In addition to a workflow to execute
@@ -474,8 +497,9 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   { \"Entry\": \"/directory1\", \"Target\": \"/bucket_name/home/mydirectory\" } ]  In most
   cases, you can use this value instead of the session policy to lock your user down to the
   designated home directory (\"chroot\"). To do this, you can set Entry to / and set Target
-  to the HomeDirectory parameter value. The following is an Entry and Target pair example for
-  chroot.  [ { \"Entry\": \"/\", \"Target\": \"/bucket_name/home/mydirectory\" } ]
+  to the value the user should see for their home directory when they log in. The following
+  is an Entry and Target pair example for chroot.  [ { \"Entry\": \"/\", \"Target\":
+  \"/bucket_name/home/mydirectory\" } ]
 - `"HomeDirectoryType"`: The type of landing directory (folder) that you want your users'
   home directory to be when they log in to the server. If you set it to PATH, the user will
   see the absolute Amazon S3 bucket or EFS paths as is in their file transfer protocol
@@ -716,7 +740,7 @@ end
     delete_connector(connector_id)
     delete_connector(connector_id, params::Dict{String,<:Any})
 
-Deletes the agreement that's specified in the provided ConnectorId.
+Deletes the connector that's specified in the provided ConnectorId.
 
 # Arguments
 - `connector_id`: The unique identifier for the connector.
@@ -2055,44 +2079,55 @@ function send_workflow_step_state(
 end
 
 """
-    start_file_transfer(connector_id, send_file_paths)
-    start_file_transfer(connector_id, send_file_paths, params::Dict{String,<:Any})
+    start_file_transfer(connector_id)
+    start_file_transfer(connector_id, params::Dict{String,<:Any})
 
-Begins an outbound file transfer to a remote AS2 server. You specify the ConnectorId and
-the file paths for where to send the files.
+Begins a file transfer between local Amazon Web Services storage and a remote AS2 or SFTP
+server.   For an AS2 connector, you specify the ConnectorId and one or more SendFilePaths
+to identify the files you want to transfer.   For an SFTP connector, the file transfer can
+be either outbound or inbound. In both cases, you specify the ConnectorId. Depending on the
+direction of the transfer, you also specify the following items:   If you are transferring
+file from a partner's SFTP server to Amazon Web Services storage, you specify one or more
+RetreiveFilePaths to identify the files you want to transfer, and a LocalDirectoryPath to
+specify the destination folder.   If you are transferring file to a partner's SFTP server
+from Amazon Web Services storage, you specify one or more SendFilePaths to identify the
+files you want to transfer, and a RemoteDirectoryPath to specify the destination folder.
 
 # Arguments
 - `connector_id`: The unique identifier for the connector.
-- `send_file_paths`: An array of strings. Each string represents the absolute path for one
-  outbound file transfer. For example,  DOC-EXAMPLE-BUCKET/myfile.txt .
 
+# Optional Parameters
+Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"LocalDirectoryPath"`: For an inbound transfer, the LocaDirectoryPath specifies the
+  destination for one or more files that are transferred from the partner's SFTP server.
+- `"RemoteDirectoryPath"`: For an outbound transfer, the RemoteDirectoryPath specifies the
+  destination for one or more files that are transferred to the partner's SFTP server. If you
+  don't specify a RemoteDirectoryPath, the destination for transferred files is the SFTP
+  user's home directory.
+- `"RetrieveFilePaths"`: One or more source paths for the partner's SFTP server. Each
+  string represents a source file path for one inbound file transfer.
+- `"SendFilePaths"`: One or more source paths for the Amazon S3 storage. Each string
+  represents a source file path for one outbound file transfer. For example,
+  DOC-EXAMPLE-BUCKET/myfile.txt .  Replace  DOC-EXAMPLE-BUCKET  with one of your actual
+  buckets.
 """
-function start_file_transfer(
-    ConnectorId, SendFilePaths; aws_config::AbstractAWSConfig=global_aws_config()
-)
+function start_file_transfer(ConnectorId; aws_config::AbstractAWSConfig=global_aws_config())
     return transfer(
         "StartFileTransfer",
-        Dict{String,Any}("ConnectorId" => ConnectorId, "SendFilePaths" => SendFilePaths);
+        Dict{String,Any}("ConnectorId" => ConnectorId);
         aws_config=aws_config,
         feature_set=SERVICE_FEATURE_SET,
     )
 end
 function start_file_transfer(
     ConnectorId,
-    SendFilePaths,
     params::AbstractDict{String};
     aws_config::AbstractAWSConfig=global_aws_config(),
 )
     return transfer(
         "StartFileTransfer",
         Dict{String,Any}(
-            mergewith(
-                _merge,
-                Dict{String,Any}(
-                    "ConnectorId" => ConnectorId, "SendFilePaths" => SendFilePaths
-                ),
-                params,
-            ),
+            mergewith(_merge, Dict{String,Any}("ConnectorId" => ConnectorId), params)
         );
         aws_config=aws_config,
         feature_set=SERVICE_FEATURE_SET,
@@ -2210,6 +2245,41 @@ function tag_resource(
         "TagResource",
         Dict{String,Any}(
             mergewith(_merge, Dict{String,Any}("Arn" => Arn, "Tags" => Tags), params)
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
+    test_connection(connector_id)
+    test_connection(connector_id, params::Dict{String,<:Any})
+
+Tests whether your SFTP connector is set up successfully. We highly recommend that you call
+this operation to test your ability to transfer files between a Transfer Family server and
+a trading partner's SFTP server.
+
+# Arguments
+- `connector_id`: The unique identifier for the connector.
+
+"""
+function test_connection(ConnectorId; aws_config::AbstractAWSConfig=global_aws_config())
+    return transfer(
+        "TestConnection",
+        Dict{String,Any}("ConnectorId" => ConnectorId);
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function test_connection(
+    ConnectorId,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return transfer(
+        "TestConnection",
+        Dict{String,Any}(
+            mergewith(_merge, Dict{String,Any}("ConnectorId" => ConnectorId), params)
         );
         aws_config=aws_config,
         feature_set=SERVICE_FEATURE_SET,
@@ -2428,15 +2498,24 @@ parameters to update.
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
-- `"AccessRole"`: With AS2, you can send files by calling StartFileTransfer and specifying
-  the file paths in the request parameter, SendFilePaths. We use the file’s parent
-  directory (for example, for --send-file-paths /bucket/dir/file.txt, parent directory is
-  /bucket/dir/) to temporarily store a processed AS2 message file, store the MDN when we
-  receive them from the partner, and write a final JSON file containing relevant metadata of
-  the transmission. So, the AccessRole needs to provide read and write access to the parent
-  directory of the file location used in the StartFileTransfer request. Additionally, you
-  need to provide read and write access to the parent directory of the files that you intend
-  to send with StartFileTransfer.
+- `"AccessRole"`: Connectors are used to send files using either the AS2 or SFTP protocol.
+  For the access role, provide the Amazon Resource Name (ARN) of the Identity and Access
+  Management role to use.  For AS2 connectors  With AS2, you can send files by calling
+  StartFileTransfer and specifying the file paths in the request parameter, SendFilePaths. We
+  use the file’s parent directory (for example, for --send-file-paths /bucket/dir/file.txt,
+  parent directory is /bucket/dir/) to temporarily store a processed AS2 message file, store
+  the MDN when we receive them from the partner, and write a final JSON file containing
+  relevant metadata of the transmission. So, the AccessRole needs to provide read and write
+  access to the parent directory of the file location used in the StartFileTransfer request.
+  Additionally, you need to provide read and write access to the parent directory of the
+  files that you intend to send with StartFileTransfer. If you are using Basic authentication
+  for your AS2 connector, the access role requires the secretsmanager:GetSecretValue
+  permission for the secret. If the secret is encrypted using a customer-managed key instead
+  of the Amazon Web Services managed key in Secrets Manager, then the role also needs the
+  kms:Decrypt permission for that key.  For SFTP connectors  Make sure that the access role
+  provides read and write access to the parent directory of the file location that's used in
+  the StartFileTransfer request. Additionally, make sure that the role provides
+  secretsmanager:GetSecretValue permission to Secrets Manager.
 - `"BaseDirectory"`: To change the landing directory (folder) for files that are
   transferred, provide the bucket folder that you want to use; for example,
   /DOC-EXAMPLE-BUCKET/home/mydirectory .
@@ -2531,20 +2610,30 @@ connector that you want to update, along with the new values for the parameters 
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
-- `"AccessRole"`: With AS2, you can send files by calling StartFileTransfer and specifying
-  the file paths in the request parameter, SendFilePaths. We use the file’s parent
-  directory (for example, for --send-file-paths /bucket/dir/file.txt, parent directory is
-  /bucket/dir/) to temporarily store a processed AS2 message file, store the MDN when we
-  receive them from the partner, and write a final JSON file containing relevant metadata of
-  the transmission. So, the AccessRole needs to provide read and write access to the parent
-  directory of the file location used in the StartFileTransfer request. Additionally, you
-  need to provide read and write access to the parent directory of the files that you intend
-  to send with StartFileTransfer.
-- `"As2Config"`: A structure that contains the parameters for a connector object.
+- `"AccessRole"`: Connectors are used to send files using either the AS2 or SFTP protocol.
+  For the access role, provide the Amazon Resource Name (ARN) of the Identity and Access
+  Management role to use.  For AS2 connectors  With AS2, you can send files by calling
+  StartFileTransfer and specifying the file paths in the request parameter, SendFilePaths. We
+  use the file’s parent directory (for example, for --send-file-paths /bucket/dir/file.txt,
+  parent directory is /bucket/dir/) to temporarily store a processed AS2 message file, store
+  the MDN when we receive them from the partner, and write a final JSON file containing
+  relevant metadata of the transmission. So, the AccessRole needs to provide read and write
+  access to the parent directory of the file location used in the StartFileTransfer request.
+  Additionally, you need to provide read and write access to the parent directory of the
+  files that you intend to send with StartFileTransfer. If you are using Basic authentication
+  for your AS2 connector, the access role requires the secretsmanager:GetSecretValue
+  permission for the secret. If the secret is encrypted using a customer-managed key instead
+  of the Amazon Web Services managed key in Secrets Manager, then the role also needs the
+  kms:Decrypt permission for that key.  For SFTP connectors  Make sure that the access role
+  provides read and write access to the parent directory of the file location that's used in
+  the StartFileTransfer request. Additionally, make sure that the role provides
+  secretsmanager:GetSecretValue permission to Secrets Manager.
+- `"As2Config"`: A structure that contains the parameters for an AS2 connector object.
 - `"LoggingRole"`: The Amazon Resource Name (ARN) of the Identity and Access Management
   (IAM) role that allows a connector to turn on CloudWatch logging for Amazon S3 events. When
   set, you can view connector activity in your CloudWatch logs.
-- `"Url"`: The URL of the partner's AS2 endpoint.
+- `"SftpConfig"`: A structure that contains the parameters for an SFTP connector object.
+- `"Url"`: The URL of the partner's AS2 or SFTP endpoint.
 """
 function update_connector(ConnectorId; aws_config::AbstractAWSConfig=global_aws_config())
     return transfer(
@@ -2759,6 +2848,14 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   EndpointType must be VPC, and domain must be Amazon S3.
 - `"SecurityPolicyName"`: Specifies the name of the security policy that is attached to the
   server.
+- `"StructuredLogDestinations"`: Specifies the log groups to which your server logs are
+  sent. To specify a log group, you must provide the ARN for an existing log group. In this
+  case, the format of the log group is as follows:
+  arn:aws:logs:region-name:amazon-account-id:log-group:log-group-name:*  For example,
+  arn:aws:logs:us-east-1:111122223333:log-group:mytestgroup:*  If you have previously
+  specified a log group for a server, you can clear it, and in effect turn off structured
+  logging, by providing an empty value for this parameter in an update-server call. For
+  example:  update-server --server-id s-1234567890abcdef0 --structured-log-destinations
 - `"WorkflowDetails"`: Specifies the workflow ID for the workflow to assign and the
   execution role that's used for executing the workflow. In addition to a workflow to execute
   when a file is uploaded completely, WorkflowDetails can also contain a workflow ID (and

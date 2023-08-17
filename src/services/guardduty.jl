@@ -213,11 +213,17 @@ GuardDuty.
 - `detector_id`: The ID of the detector belonging to the GuardDuty account that you want to
   create a filter for.
 - `finding_criteria`: Represents the criteria to be used in the filter for querying
-  findings. You can only use the following attributes to query findings:   accountId   region
-    id   resource.accessKeyDetails.accessKeyId   resource.accessKeyDetails.principalId
-  resource.accessKeyDetails.userName   resource.accessKeyDetails.userType
-  resource.instanceDetails.iamInstanceProfile.id   resource.instanceDetails.imageId
-  resource.instanceDetails.instanceId   resource.instanceDetails.outpostArn
+  findings. You can only use the following attributes to query findings:   accountId   id
+  region   severity To filter on the basis of severity, the API and CLI use the following
+  input list for the FindingCriteria condition:    Low: [\"1\", \"2\", \"3\"]     Medium:
+  [\"4\", \"5\", \"6\"]     High: [\"7\", \"8\", \"9\"]    For more information, see Severity
+  levels for GuardDuty findings.   type   updatedAt Type: ISO 8601 string format:
+  YYYY-MM-DDTHH:MM:SS.SSSZ or YYYY-MM-DDTHH:MM:SSZ depending on whether the value contains
+  milliseconds.   resource.accessKeyDetails.accessKeyId
+  resource.accessKeyDetails.principalId   resource.accessKeyDetails.userName
+  resource.accessKeyDetails.userType   resource.instanceDetails.iamInstanceProfile.id
+  resource.instanceDetails.imageId   resource.instanceDetails.instanceId
+  resource.instanceDetails.tags.key   resource.instanceDetails.tags.value
   resource.instanceDetails.networkInterfaces.ipv6Addresses
   resource.instanceDetails.networkInterfaces.privateIpAddresses.privateIpAddress
   resource.instanceDetails.networkInterfaces.publicDnsName
@@ -225,10 +231,12 @@ GuardDuty.
   resource.instanceDetails.networkInterfaces.securityGroups.groupId
   resource.instanceDetails.networkInterfaces.securityGroups.groupName
   resource.instanceDetails.networkInterfaces.subnetId
-  resource.instanceDetails.networkInterfaces.vpcId   resource.instanceDetails.tags.key
-  resource.instanceDetails.tags.value   resource.resourceType   service.action.actionType
-  service.action.awsApiCallAction.api   service.action.awsApiCallAction.callerType
-  service.action.awsApiCallAction.errorCode   service.action.awsApiCallAction.userAgent
+  resource.instanceDetails.networkInterfaces.vpcId   resource.instanceDetails.outpostArn
+  resource.resourceType   resource.s3BucketDetails.publicAccess.effectivePermissions
+  resource.s3BucketDetails.name   resource.s3BucketDetails.tags.key
+  resource.s3BucketDetails.tags.value   resource.s3BucketDetails.type
+  service.action.actionType   service.action.awsApiCallAction.api
+  service.action.awsApiCallAction.callerType   service.action.awsApiCallAction.errorCode
   service.action.awsApiCallAction.remoteIpDetails.city.cityName
   service.action.awsApiCallAction.remoteIpDetails.country.countryName
   service.action.awsApiCallAction.remoteIpDetails.ipAddressV4
@@ -239,19 +247,38 @@ GuardDuty.
   service.action.networkConnectionAction.connectionDirection
   service.action.networkConnectionAction.localPortDetails.port
   service.action.networkConnectionAction.protocol
-  service.action.networkConnectionAction.localIpDetails.ipAddressV4
   service.action.networkConnectionAction.remoteIpDetails.city.cityName
   service.action.networkConnectionAction.remoteIpDetails.country.countryName
   service.action.networkConnectionAction.remoteIpDetails.ipAddressV4
   service.action.networkConnectionAction.remoteIpDetails.organization.asn
   service.action.networkConnectionAction.remoteIpDetails.organization.asnOrg
   service.action.networkConnectionAction.remotePortDetails.port
-  service.additionalInfo.threatListName
-  resource.s3BucketDetails.publicAccess.effectivePermissions   resource.s3BucketDetails.name
-   resource.s3BucketDetails.tags.key   resource.s3BucketDetails.tags.value
-  resource.s3BucketDetails.type   service.resourceRole   severity   type   updatedAt Type:
-  ISO 8601 string format: YYYY-MM-DDTHH:MM:SS.SSSZ or YYYY-MM-DDTHH:MM:SSZ depending on
-  whether the value contains milliseconds.
+  service.action.awsApiCallAction.remoteAccountDetails.affiliated
+  service.action.kubernetesApiCallAction.remoteIpDetails.ipAddressV4
+  service.action.kubernetesApiCallAction.requestUri
+  service.action.networkConnectionAction.localIpDetails.ipAddressV4
+  service.action.networkConnectionAction.protocol
+  service.action.awsApiCallAction.serviceName
+  service.action.awsApiCallAction.remoteAccountDetails.accountId
+  service.additionalInfo.threatListName   service.resourceRole
+  resource.eksClusterDetails.name   resource.kubernetesDetails.kubernetesWorkloadDetails.name
+    resource.kubernetesDetails.kubernetesWorkloadDetails.namespace
+  resource.kubernetesDetails.kubernetesUserDetails.username
+  resource.kubernetesDetails.kubernetesWorkloadDetails.containers.image
+  resource.kubernetesDetails.kubernetesWorkloadDetails.containers.imagePrefix
+  service.ebsVolumeScanDetails.scanId
+  service.ebsVolumeScanDetails.scanDetections.threatDetectedByName.threatNames.name
+  service.ebsVolumeScanDetails.scanDetections.threatDetectedByName.threatNames.severity
+  service.ebsVolumeScanDetails.scanDetections.threatDetectedByName.threatNames.filePaths.hash
+    resource.ecsClusterDetails.name   resource.ecsClusterDetails.taskDetails.containers.image
+    resource.ecsClusterDetails.taskDetails.definitionArn   resource.containerDetails.image
+  resource.rdsDbInstanceDetails.dbInstanceIdentifier
+  resource.rdsDbInstanceDetails.dbClusterIdentifier   resource.rdsDbInstanceDetails.engine
+  resource.rdsDbUserDetails.user   resource.rdsDbInstanceDetails.tags.key
+  resource.rdsDbInstanceDetails.tags.value   service.runtimeDetails.process.executableSha256
+   service.runtimeDetails.process.name   service.runtimeDetails.process.name
+  resource.lambdaDetails.functionName   resource.lambdaDetails.functionArn
+  resource.lambdaDetails.tags.key   resource.lambdaDetails.tags.value
 - `name`: The name of the filter. Valid characters include period (.), underscore (_), dash
   (-), and alphanumeric characters. A whitespace is considered to be an invalid character.
 
@@ -392,12 +419,17 @@ end
 
 Creates member accounts of the current Amazon Web Services account by specifying a list of
 Amazon Web Services account IDs. This step is a prerequisite for managing the associated
-member accounts either by invitation or through an organization. When using Create Members
-as an organizations delegated administrator this action will enable GuardDuty in the added
-member accounts, with the exception of the organization delegated administrator account,
-which must enable GuardDuty prior to being added as a member. If you are adding accounts by
-invitation, use this action after GuardDuty has bee enabled in potential member accounts
-and before using InviteMembers.
+member accounts either by invitation or through an organization. As a delegated
+administrator, using CreateMembers will enable GuardDuty in the added member accounts, with
+the exception of the organization delegated administrator account. A delegated
+administrator must enable GuardDuty prior to being added as a member. If you are adding
+accounts by invitation, before using InviteMembers, use CreateMembers after GuardDuty has
+been enabled in potential member accounts. If you disassociate a member from a GuardDuty
+delegated administrator, the member account details obtained from this API, including the
+associated email addresses, will be retained. This is done so that the delegated
+administrator can invoke the InviteMembers API without the need to invoke the CreateMembers
+API again. To remove the details associated with a member account, the delegated
+administrator must invoke the DeleteMembers API.
 
 # Arguments
 - `account_details`: A list of account ID and email address pairs of the accounts that you
@@ -1084,7 +1116,12 @@ end
     disassociate_from_administrator_account(detector_id)
     disassociate_from_administrator_account(detector_id, params::Dict{String,<:Any})
 
-Disassociates the current GuardDuty member account from its administrator account. With
+Disassociates the current GuardDuty member account from its administrator account. When you
+disassociate an invited member from a GuardDuty delegated administrator, the member account
+details obtained from the CreateMembers API, including the associated email addresses, are
+retained. This is done so that the delegated administrator can invoke the InviteMembers API
+without the need to invoke the CreateMembers API again. To remove the details associated
+with a member account, the delegated administrator must invoke the DeleteMembers API.  With
 autoEnableOrganizationMembers configuration for your organization set to ALL, you'll
 receive an error if you attempt to disable GuardDuty in a member account.
 
@@ -1120,7 +1157,12 @@ end
     disassociate_from_master_account(detector_id)
     disassociate_from_master_account(detector_id, params::Dict{String,<:Any})
 
-Disassociates the current GuardDuty member account from its administrator account.
+Disassociates the current GuardDuty member account from its administrator account. When you
+disassociate an invited member from a GuardDuty delegated administrator, the member account
+details obtained from the CreateMembers API, including the associated email addresses, are
+retained. This is done so that the delegated administrator can invoke the InviteMembers API
+without the need to invoke the CreateMembers API again. To remove the details associated
+with a member account, the delegated administrator must invoke the DeleteMembers API.
 
 # Arguments
 - `detector_id`: The unique ID of the detector of the GuardDuty member account.
@@ -1154,10 +1196,16 @@ end
     disassociate_members(account_ids, detector_id)
     disassociate_members(account_ids, detector_id, params::Dict{String,<:Any})
 
-Disassociates GuardDuty member accounts (to the current administrator account) specified by
-the account IDs. With autoEnableOrganizationMembers configuration for your organization set
-to ALL, you'll receive an error if you attempt to disassociate a member account before
-removing them from your Amazon Web Services organization.
+Disassociates GuardDuty member accounts (from the current administrator account) specified
+by the account IDs. When you disassociate an invited member from a GuardDuty delegated
+administrator, the member account details obtained from the CreateMembers API, including
+the associated email addresses, are retained. This is done so that the delegated
+administrator can invoke the InviteMembers API without the need to invoke the CreateMembers
+API again. To remove the details associated with a member account, the delegated
+administrator must invoke the DeleteMembers API.  With autoEnableOrganizationMembers
+configuration for your organization set to ALL, you'll receive an error if you attempt to
+disassociate a member account before removing them from your Amazon Web Services
+organization.
 
 # Arguments
 - `account_ids`: A list of account IDs of the GuardDuty member accounts that you want to
@@ -1831,10 +1879,21 @@ end
     invite_members(account_ids, detector_id)
     invite_members(account_ids, detector_id, params::Dict{String,<:Any})
 
-Invites other Amazon Web Services accounts (created as members of the current Amazon Web
-Services account by CreateMembers) to enable GuardDuty, and allow the current Amazon Web
-Services account to view and manage these accounts' findings on their behalf as the
-GuardDuty administrator account.
+Invites Amazon Web Services accounts to become members of an organization administered by
+the Amazon Web Services account that invokes this API. If you are using Amazon Web Services
+Organizations to manager your GuardDuty environment, this step is not needed. For more
+information, see Managing accounts with Amazon Web Services Organizations. To invite Amazon
+Web Services accounts, the first step is to ensure that GuardDuty has been enabled in the
+potential member accounts. You can now invoke this API to add accounts by invitation. The
+invited accounts can either accept or decline the invitation from their GuardDuty accounts.
+Each invited Amazon Web Services account can choose to accept the invitation from only one
+Amazon Web Services account. For more information, see Managing GuardDuty accounts by
+invitation. After the invite has been accepted and you choose to disassociate a member
+account (by using DisassociateMembers) from your account, the details of the member account
+obtained by invoking CreateMembers, including the associated email addresses, will be
+retained. This is done so that you can invoke InviteMembers without the need to invoke
+CreateMembers again. To remove the details associated with a member account, you must also
+invoke DeleteMembers.
 
 # Arguments
 - `account_ids`: A list of account IDs of the accounts that you want to invite to GuardDuty
@@ -2257,8 +2316,8 @@ end
     list_tags_for_resource(resource_arn, params::Dict{String,<:Any})
 
 Lists tags for a resource. Tagging is currently supported for detectors, finding filters,
-IP sets, and threat intel sets, with a limit of 50 tags per resource. When invoked, this
-operation returns all assigned tags for a given resource.
+IP sets, threat intel sets, and publishing destination, with a limit of 50 tags per each
+resource. When invoked, this operation returns all assigned tags for a given resource.
 
 # Arguments
 - `resource_arn`: The Amazon Resource Name (ARN) for the given GuardDuty resource.

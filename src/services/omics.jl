@@ -42,6 +42,33 @@ function abort_multipart_read_set_upload(
 end
 
 """
+    accept_share(share_id)
+    accept_share(share_id, params::Dict{String,<:Any})
+
+ Accepts a share for an analytics store.
+
+# Arguments
+- `share_id`:  The ID for a share offer for analytics store data.
+
+"""
+function accept_share(shareId; aws_config::AbstractAWSConfig=global_aws_config())
+    return omics(
+        "POST", "/share/$(shareId)"; aws_config=aws_config, feature_set=SERVICE_FEATURE_SET
+    )
+end
+function accept_share(
+    shareId, params::AbstractDict{String}; aws_config::AbstractAWSConfig=global_aws_config()
+)
+    return omics(
+        "POST",
+        "/share/$(shareId)",
+        params;
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
     batch_delete_read_set(ids, sequence_store_id)
     batch_delete_read_set(ids, sequence_store_id, params::Dict{String,<:Any})
 
@@ -224,6 +251,8 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
 - `"sseConfig"`: Server-side encryption (SSE) settings for the store.
 - `"storeOptions"`: File parsing options for the annotation store.
 - `"tags"`: Tags for the store.
+- `"versionName"`:  The name given to an annotation store version to distinguish it from
+  other versions.
 """
 function create_annotation_store(
     storeFormat; aws_config::AbstractAWSConfig=global_aws_config()
@@ -246,6 +275,51 @@ function create_annotation_store(
         "/annotationStore",
         Dict{String,Any}(
             mergewith(_merge, Dict{String,Any}("storeFormat" => storeFormat), params)
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
+    create_annotation_store_version(name, version_name)
+    create_annotation_store_version(name, version_name, params::Dict{String,<:Any})
+
+ Creates a new version of an annotation store.
+
+# Arguments
+- `name`:  The name of an annotation store version from which versions are being created.
+- `version_name`:  The name given to an annotation store version to distinguish it from
+  other versions.
+
+# Optional Parameters
+Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"description"`:  The description of an annotation store version.
+- `"tags"`:  Any tags added to annotation store version.
+- `"versionOptions"`:  The options for an annotation store version.
+"""
+function create_annotation_store_version(
+    name, versionName; aws_config::AbstractAWSConfig=global_aws_config()
+)
+    return omics(
+        "POST",
+        "/annotationStore/$(name)/version",
+        Dict{String,Any}("versionName" => versionName);
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function create_annotation_store_version(
+    name,
+    versionName,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return omics(
+        "POST",
+        "/annotationStore/$(name)/version",
+        Dict{String,Any}(
+            mergewith(_merge, Dict{String,Any}("versionName" => versionName), params)
         );
         aws_config=aws_config,
         feature_set=SERVICE_FEATURE_SET,
@@ -452,6 +526,59 @@ function create_sequence_store(
 end
 
 """
+    create_share(principal_subscriber, resource_arn)
+    create_share(principal_subscriber, resource_arn, params::Dict{String,<:Any})
+
+ Creates a share offer that can be accepted outside the account by a subscriber. The share
+is created by the owner and accepted by the principal subscriber.
+
+# Arguments
+- `principal_subscriber`:  The principal subscriber is the account being given access to
+  the analytics store data through the share offer.
+- `resource_arn`:  The resource ARN for the analytics store to be shared.
+
+# Optional Parameters
+Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"shareName"`:  A name given to the share.
+"""
+function create_share(
+    principalSubscriber, resourceArn; aws_config::AbstractAWSConfig=global_aws_config()
+)
+    return omics(
+        "POST",
+        "/share",
+        Dict{String,Any}(
+            "principalSubscriber" => principalSubscriber, "resourceArn" => resourceArn
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function create_share(
+    principalSubscriber,
+    resourceArn,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return omics(
+        "POST",
+        "/share",
+        Dict{String,Any}(
+            mergewith(
+                _merge,
+                Dict{String,Any}(
+                    "principalSubscriber" => principalSubscriber,
+                    "resourceArn" => resourceArn,
+                ),
+                params,
+            ),
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
     create_variant_store(reference)
     create_variant_store(reference, params::Dict{String,<:Any})
 
@@ -568,6 +695,49 @@ function delete_annotation_store(
         "DELETE",
         "/annotationStore/$(name)",
         params;
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
+    delete_annotation_store_versions(name, versions)
+    delete_annotation_store_versions(name, versions, params::Dict{String,<:Any})
+
+ Deletes one or multiple versions of an annotation store.
+
+# Arguments
+- `name`:  The name of the annotation store from which versions are being deleted.
+- `versions`:  The versions of an annotation store to be deleted.
+
+# Optional Parameters
+Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"force"`:  Forces the deletion of an annotation store version when imports are
+  in-progress..
+"""
+function delete_annotation_store_versions(
+    name, versions; aws_config::AbstractAWSConfig=global_aws_config()
+)
+    return omics(
+        "POST",
+        "/annotationStore/$(name)/versions/delete",
+        Dict{String,Any}("versions" => versions);
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function delete_annotation_store_versions(
+    name,
+    versions,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return omics(
+        "POST",
+        "/annotationStore/$(name)/versions/delete",
+        Dict{String,Any}(
+            mergewith(_merge, Dict{String,Any}("versions" => versions), params)
+        );
         aws_config=aws_config,
         feature_set=SERVICE_FEATURE_SET,
     )
@@ -724,6 +894,36 @@ function delete_sequence_store(
 end
 
 """
+    delete_share(share_id)
+    delete_share(share_id, params::Dict{String,<:Any})
+
+ Deletes a share of an analytics store.
+
+# Arguments
+- `share_id`:  The ID for the share request to be deleted.
+
+"""
+function delete_share(shareId; aws_config::AbstractAWSConfig=global_aws_config())
+    return omics(
+        "DELETE",
+        "/share/$(shareId)";
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function delete_share(
+    shareId, params::AbstractDict{String}; aws_config::AbstractAWSConfig=global_aws_config()
+)
+    return omics(
+        "DELETE",
+        "/share/$(shareId)",
+        params;
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
     delete_variant_store(name)
     delete_variant_store(name, params::Dict{String,<:Any})
 
@@ -837,6 +1037,43 @@ function get_annotation_store(
     return omics(
         "GET",
         "/annotationStore/$(name)",
+        params;
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
+    get_annotation_store_version(name, version_name)
+    get_annotation_store_version(name, version_name, params::Dict{String,<:Any})
+
+ Retrieves the metadata for an annotation store version.
+
+# Arguments
+- `name`:  The name given to an annotation store version to distinguish it from others.
+- `version_name`:  The name given to an annotation store version to distinguish it from
+  others.
+
+"""
+function get_annotation_store_version(
+    name, versionName; aws_config::AbstractAWSConfig=global_aws_config()
+)
+    return omics(
+        "GET",
+        "/annotationStore/$(name)/version/$(versionName)";
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function get_annotation_store_version(
+    name,
+    versionName,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return omics(
+        "GET",
+        "/annotationStore/$(name)/version/$(versionName)",
         params;
         aws_config=aws_config,
         feature_set=SERVICE_FEATURE_SET,
@@ -1296,6 +1533,33 @@ function get_sequence_store(
 end
 
 """
+    get_share(share_id)
+    get_share(share_id, params::Dict{String,<:Any})
+
+ Retrieves the metadata for a share.
+
+# Arguments
+- `share_id`:  The generated ID for a share.
+
+"""
+function get_share(shareId; aws_config::AbstractAWSConfig=global_aws_config())
+    return omics(
+        "GET", "/share/$(shareId)"; aws_config=aws_config, feature_set=SERVICE_FEATURE_SET
+    )
+end
+function get_share(
+    shareId, params::AbstractDict{String}; aws_config::AbstractAWSConfig=global_aws_config()
+)
+    return omics(
+        "GET",
+        "/share/$(shareId)",
+        params;
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
     get_variant_import_job(job_id)
     get_variant_import_job(job_id, params::Dict{String,<:Any})
 
@@ -1397,8 +1661,8 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
 - `"filter"`: A filter to apply to the list.
 - `"ids"`: IDs of annotation import jobs to retrieve.
 - `"maxResults"`: The maximum number of jobs to return in one page of results.
-- `"nextToken"`: Specify the pagination token from a previous request to retrieve the next
-  page of results.
+- `"nextToken"`: Specifies the pagination token from a previous request to retrieve the
+  next page of results.
 """
 function list_annotation_import_jobs(; aws_config::AbstractAWSConfig=global_aws_config())
     return omics(
@@ -1414,6 +1678,45 @@ function list_annotation_import_jobs(
     return omics(
         "POST",
         "/import/annotations",
+        params;
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
+    list_annotation_store_versions(name)
+    list_annotation_store_versions(name, params::Dict{String,<:Any})
+
+ Lists the versions of an annotation store.
+
+# Arguments
+- `name`:  The name of an annotation store.
+
+# Optional Parameters
+Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"filter"`:  A filter to apply to the list of annotation store versions.
+- `"maxResults"`:  The maximum number of annotation store versions to return in one page of
+  results.
+- `"nextToken"`:  Specifies the pagination token from a previous request to retrieve the
+  next page of results.
+"""
+function list_annotation_store_versions(
+    name; aws_config::AbstractAWSConfig=global_aws_config()
+)
+    return omics(
+        "POST",
+        "/annotationStore/$(name)/versions";
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function list_annotation_store_versions(
+    name, params::AbstractDict{String}; aws_config::AbstractAWSConfig=global_aws_config()
+)
+    return omics(
+        "POST",
+        "/annotationStore/$(name)/versions",
         params;
         aws_config=aws_config,
         feature_set=SERVICE_FEATURE_SET,
@@ -1920,6 +2223,47 @@ function list_sequence_stores(
 end
 
 """
+    list_shares(resource_owner)
+    list_shares(resource_owner, params::Dict{String,<:Any})
+
+ Lists all shares associated with an account.
+
+# Arguments
+- `resource_owner`:  The account that owns the analytics store shared.
+
+# Optional Parameters
+Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"filter"`:  Attributes used to filter for a specific subset of shares.
+- `"maxResults"`:  The maximum number of shares to return in one page of results.
+- `"nextToken"`:  Next token returned in the response of a previous
+  ListReadSetUploadPartsRequest call. Used to get the next page of results.
+"""
+function list_shares(resourceOwner; aws_config::AbstractAWSConfig=global_aws_config())
+    return omics(
+        "POST",
+        "/shares",
+        Dict{String,Any}("resourceOwner" => resourceOwner);
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function list_shares(
+    resourceOwner,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return omics(
+        "POST",
+        "/shares",
+        Dict{String,Any}(
+            mergewith(_merge, Dict{String,Any}("resourceOwner" => resourceOwner), params)
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
     list_tags_for_resource(resource_arn)
     list_tags_for_resource(resource_arn, params::Dict{String,<:Any})
 
@@ -2056,6 +2400,7 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
 - `"annotationFields"`:  The annotation schema generated by the parsed annotation data.
 - `"formatOptions"`: Formatting options for the annotation file.
 - `"runLeftNormalization"`: The job's left normalization setting.
+- `"versionName"`:  The name of the annotation store version.
 """
 function start_annotation_import_job(
     destinationName, items, roleArn; aws_config::AbstractAWSConfig=global_aws_config()
@@ -2500,6 +2845,45 @@ function update_annotation_store(
     return omics(
         "POST",
         "/annotationStore/$(name)",
+        params;
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
+    update_annotation_store_version(name, version_name)
+    update_annotation_store_version(name, version_name, params::Dict{String,<:Any})
+
+ Updates the description of an annotation store version.
+
+# Arguments
+- `name`:  The name of an annotation store.
+- `version_name`:  The name of an annotation store version.
+
+# Optional Parameters
+Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"description"`:  The description of an annotation store.
+"""
+function update_annotation_store_version(
+    name, versionName; aws_config::AbstractAWSConfig=global_aws_config()
+)
+    return omics(
+        "POST",
+        "/annotationStore/$(name)/version/$(versionName)";
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function update_annotation_store_version(
+    name,
+    versionName,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return omics(
+        "POST",
+        "/annotationStore/$(name)/version/$(versionName)",
         params;
         aws_config=aws_config,
         feature_set=SERVICE_FEATURE_SET,

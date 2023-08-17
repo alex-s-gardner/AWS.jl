@@ -260,7 +260,11 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
 - `"AlarmNames"`: The names of the alarms to retrieve information about.
 - `"AlarmTypes"`: Use this parameter to specify whether you want the operation to return
   metric alarms or composite alarms. If you omit this parameter, only metric alarms are
-  returned.
+  returned, even if composite alarms exist in the account. For example, if you omit this
+  parameter or specify MetricAlarms, the operation returns only a list of metric alarms. It
+  does not return any composite alarms, even if composite alarms exist in the account. If you
+  specify CompositeAlarms, the operation returns only a list of composite alarms, and does
+  not return any metric alarms.
 - `"ChildrenOfAlarmName"`: If you use this parameter and specify the name of a composite
   alarm, the operation returns information about the \"children\" alarms of the alarm you
   specify. These are the metric alarms and composite alarms referenced in the AlarmRule field
@@ -653,7 +657,7 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   point.    Average -- the average value from all contributors during the time period
   represented by that data point.
 - `"OrderBy"`: Determines what statistic to use to rank the contributors. Valid values are
-  SUM and MAXIMUM.
+  Sum and Maximum.
 """
 function get_insight_rule_report(
     EndTime, Period, RuleName, StartTime; aws_config::AbstractAWSConfig=global_aws_config()
@@ -1649,9 +1653,14 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   always evaluated and possibly changes state no matter how many data points are available.
   For more information, see Percentile-Based CloudWatch Alarms and Low Data Samples. Valid
   Values: evaluate | ignore
-- `"ExtendedStatistic"`: The percentile statistic for the metric specified in MetricName.
-  Specify a value between p0.0 and p100. When you call PutMetricAlarm and specify a
-  MetricName, you must specify either Statistic or ExtendedStatistic, but not both.
+- `"ExtendedStatistic"`: The extended statistic for the metric specified in MetricName.
+  When you call PutMetricAlarm and specify a MetricName, you must specify either Statistic or
+  ExtendedStatistic but not both. If you specify ExtendedStatistic, the following are valid
+  values:    p90     tm90     tc90     ts90     wm90     IQM     PR(n:m) where n and m are
+  values of the metric    TC(X%:X%) where X is between 10 and 90 inclusive.    TM(X%:X%)
+  where X is between 10 and 90 inclusive.    TS(X%:X%) where X is between 10 and 90
+  inclusive.    WM(X%:X%) where X is between 10 and 90 inclusive.   For more information
+  about these extended statistics, see CloudWatch statistics definitions.
 - `"InsufficientDataActions"`: The actions to execute when this alarm transitions to the
   INSUFFICIENT_DATA state from any other state. Each action is specified as an Amazon
   Resource Name (ARN). Valid values:  EC2 actions:     arn:aws:automate:region:ec2:stop
@@ -1717,11 +1726,12 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   and specify a MetricName, you must specify either Statistic or ExtendedStatistic, but not
   both.
 - `"Tags"`: A list of key-value pairs to associate with the alarm. You can associate as
-  many as 50 tags with an alarm. Tags can help you organize and categorize your resources.
-  You can also use them to scope user permissions by granting a user permission to access or
-  change only resources with certain tag values. If you are using this operation to update an
-  existing alarm, any tags you specify in this parameter are ignored. To change the tags of
-  an existing alarm, use TagResource or UntagResource.
+  many as 50 tags with an alarm. To be able to associate tags with the alarm when you create
+  the alarm, you must have the cloudwatch:TagResource permission. Tags can help you organize
+  and categorize your resources. You can also use them to scope user permissions by granting
+  a user permission to access or change only resources with certain tag values. If you are
+  using this operation to update an existing alarm, any tags you specify in this parameter
+  are ignored. To change the tags of an existing alarm, use TagResource or UntagResource.
 - `"Threshold"`: The value against which the specified statistic is compared. This
   parameter is required for alarms based on static thresholds, but should not be used for
   alarms based on anomaly detection models.

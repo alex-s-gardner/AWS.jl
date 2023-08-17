@@ -2568,7 +2568,7 @@ Increase the number of node groups in the Global datastore
 - `apply_immediately`: Indicates that the process begins immediately. At present, the only
   permitted value for this parameter is true.
 - `global_replication_group_id`: The name of the Global datastore
-- `node_group_count`: The number of node groups you wish to add
+- `node_group_count`: Total number of node groups you want
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
@@ -3796,6 +3796,56 @@ function test_failover(
                 _merge,
                 Dict{String,Any}(
                     "NodeGroupId" => NodeGroupId, "ReplicationGroupId" => ReplicationGroupId
+                ),
+                params,
+            ),
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
+    test_migration(customer_node_endpoint_list, replication_group_id)
+    test_migration(customer_node_endpoint_list, replication_group_id, params::Dict{String,<:Any})
+
+ Async API to test connection between source and target replication group.
+
+# Arguments
+- `customer_node_endpoint_list`:  List of endpoints from which data should be migrated.
+  List should have only one element.
+- `replication_group_id`:  The ID of the replication group to which data is to be migrated.
+
+"""
+function test_migration(
+    CustomerNodeEndpointList,
+    ReplicationGroupId;
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return elasticache(
+        "TestMigration",
+        Dict{String,Any}(
+            "CustomerNodeEndpointList" => CustomerNodeEndpointList,
+            "ReplicationGroupId" => ReplicationGroupId,
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function test_migration(
+    CustomerNodeEndpointList,
+    ReplicationGroupId,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return elasticache(
+        "TestMigration",
+        Dict{String,Any}(
+            mergewith(
+                _merge,
+                Dict{String,Any}(
+                    "CustomerNodeEndpointList" => CustomerNodeEndpointList,
+                    "ReplicationGroupId" => ReplicationGroupId,
                 ),
                 params,
             ),

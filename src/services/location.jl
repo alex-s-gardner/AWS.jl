@@ -269,26 +269,26 @@ end
     batch_update_device_position(tracker_name, updates)
     batch_update_device_position(tracker_name, updates, params::Dict{String,<:Any})
 
-Uploads position update data for one or more devices to a tracker resource. Amazon Location
-uses the data when it reports the last known device position and position history. Amazon
-Location retains location data for 30 days.  Position updates are handled based on the
-PositionFiltering property of the tracker. When PositionFiltering is set to TimeBased,
-updates are evaluated against linked geofence collections, and location data is stored at a
-maximum of one position per 30 second interval. If your update frequency is more often than
-every 30 seconds, only one update per 30 seconds is stored for each unique device ID. When
-PositionFiltering is set to DistanceBased filtering, location data is stored and evaluated
-against linked geofence collections only if the device has moved more than 30 m (98.4 ft).
-When PositionFiltering is set to AccuracyBased filtering, location data is stored and
-evaluated against linked geofence collections only if the device has moved more than the
-measured accuracy. For example, if two consecutive updates from a device have a horizontal
-accuracy of 5 m and 10 m, the second update is neither stored or evaluated if the device
-has moved less than 15 m. If PositionFiltering is set to AccuracyBased filtering, Amazon
-Location uses the default value { \"Horizontal\": 0} when accuracy is not provided on a
-DevicePositionUpdate.
+Uploads position update data for one or more devices to a tracker resource (up to 10
+devices per batch). Amazon Location uses the data when it reports the last known device
+position and position history. Amazon Location retains location data for 30 days.  Position
+updates are handled based on the PositionFiltering property of the tracker. When
+PositionFiltering is set to TimeBased, updates are evaluated against linked geofence
+collections, and location data is stored at a maximum of one position per 30 second
+interval. If your update frequency is more often than every 30 seconds, only one update per
+30 seconds is stored for each unique device ID. When PositionFiltering is set to
+DistanceBased filtering, location data is stored and evaluated against linked geofence
+collections only if the device has moved more than 30 m (98.4 ft). When PositionFiltering
+is set to AccuracyBased filtering, location data is stored and evaluated against linked
+geofence collections only if the device has moved more than the measured accuracy. For
+example, if two consecutive updates from a device have a horizontal accuracy of 5 m and 10
+m, the second update is neither stored or evaluated if the device has moved less than 15 m.
+If PositionFiltering is set to AccuracyBased filtering, Amazon Location uses the default
+value { \"Horizontal\": 0} when accuracy is not provided on a DevicePositionUpdate.
 
 # Arguments
 - `tracker_name`: The name of the tracker resource to update.
-- `updates`: Contains the position update details for each device.
+- `updates`: Contains the position update details for each device, up to 10 devices.
 
 """
 function batch_update_device_position(
@@ -384,6 +384,7 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   ValidationException error. If Esri is the provider for your route calculator, specifying a
   route that is longer than 400 km returns a 400 RoutesValidationException error.  Valid
   Values: [-180 to 180,-90 to 90]
+- `"key"`: The optional API key to authorize the request.
 """
 function calculate_route(
     CalculatorName,
@@ -496,6 +497,7 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
 - `"TruckModeOptions"`: Specifies route preferences when traveling by Truck, such as
   avoiding routes that use ferries or tolls, and truck specifications to consider when
   choosing an optimal road. Requirements: TravelMode must be specified as Truck.
+- `"key"`: The optional API key to authorize the request.
 """
 function calculate_route_matrix(
     CalculatorName,
@@ -598,9 +600,8 @@ end
     create_key(key_name, restrictions, params::Dict{String,<:Any})
 
 Creates an API key resource in your Amazon Web Services account, which lets you grant
-geo:GetMap* actions for Amazon Location Map resources to the API key bearer.  The API keys
-feature is in preview. We may add, change, or remove features before announcing general
-availability. For more information, see Using API keys.
+actions for Amazon Location resources to the API key bearer.  For more information, see
+Using API keys.
 
 # Arguments
 - `key_name`: A custom name for the API key resource. Requirements:   Contain only
@@ -880,6 +881,9 @@ current and historical location of devices.
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
 - `"Description"`: An optional description for the tracker resource.
+- `"EventBridgeEnabled"`: Whether to enable position UPDATE events from this tracker to be
+  sent to EventBridge.  You do not need enable this feature to get ENTER and EXIT events for
+  geofences with this tracker. Those events are always sent to EventBridge.
 - `"KmsKeyId"`: A key identifier for an Amazon Web Services KMS customer managed key. Enter
   a key ID, key ARN, alias name, or alias ARN.
 - `"PositionFiltering"`: Specifies the position filtering for the tracker resource. Valid
@@ -1171,9 +1175,7 @@ end
     describe_key(key_name)
     describe_key(key_name, params::Dict{String,<:Any})
 
-Retrieves the API key resource details.  The API keys feature is in preview. We may add,
-change, or remove features before announcing general availability. For more information,
-see Using API keys.
+Retrieves the API key resource details.
 
 # Arguments
 - `key_name`: The name of the API key resource.
@@ -1702,6 +1704,7 @@ Region   Data provider specified in the place index resource
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"key"`: The optional API key to authorize the request.
 - `"language"`: The preferred language used to return results. The value must be a valid
   BCP 47 language tag, for example, en for English. This setting affects the languages used
   in the results, but not the results themselves. If no language is specified, or not
@@ -1850,9 +1853,7 @@ end
     list_keys()
     list_keys(params::Dict{String,<:Any})
 
-Lists API key resources in your Amazon Web Services account.  The API keys feature is in
-preview. We may add, change, or remove features before announcing general availability. For
-more information, see Using API keys.
+Lists API key resources in your Amazon Web Services account.
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
@@ -2101,6 +2102,11 @@ existing geofence if a geofence ID is included in the request.
   polygon or a circle. Including both will return a validation error.  Each  geofence polygon
   can have a maximum of 1,000 vertices.
 
+# Optional Parameters
+Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"GeofenceProperties"`: Associates one of more properties with the geofence. A property
+  is a key-value pair stored with the geofence and added to any geofence event triggered with
+  that geofence. Format: \"key\" : \"value\"
 """
 function put_geofence(
     CollectionName, GeofenceId, Geometry; aws_config::AbstractAWSConfig=global_aws_config()
@@ -2158,6 +2164,7 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   not have a value for Greek, the result will be in a language that the provider does support.
 - `"MaxResults"`: An optional parameter. The maximum number of results returned per
   request. Default value: 50
+- `"key"`: The optional API key to authorize the request.
 """
 function search_place_index_for_position(
     IndexName, Position; aws_config::AbstractAWSConfig=global_aws_config()
@@ -2222,6 +2229,11 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   corner has longitude -12.7935 and latitude -37.4835, and the northeast corner has longitude
   -12.0684 and latitude -36.9542.   FilterBBox and BiasPosition are mutually exclusive.
   Specifying both options results in an error.
+- `"FilterCategories"`: A list of one or more Amazon Location categories to filter the
+  returned places. If you include more than one category, the results will include results
+  that match any of the categories listed. For more information about using categories,
+  including a list of Amazon Location categories, see Categories and filtering, in the Amazon
+  Location Service Developer Guide.
 - `"FilterCountries"`: An optional parameter that limits the search results by returning
   only suggestions within the provided list of countries.   Use the ISO 3166 3-digit country
   code. For example, Australia uses three upper-case characters: AUS.
@@ -2236,6 +2248,7 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   will be in a language that the provider does support.
 - `"MaxResults"`: An optional parameter. The maximum number of results returned per
   request.  The default: 5
+- `"key"`: The optional API key to authorize the request.
 """
 function search_place_index_for_suggestions(
     IndexName, Text; aws_config::AbstractAWSConfig=global_aws_config()
@@ -2297,6 +2310,11 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   corner has longitude -12.7935 and latitude -37.4835, and the northeast corner has longitude
   -12.0684 and latitude -36.9542.   FilterBBox and BiasPosition are mutually exclusive.
   Specifying both options results in an error.
+- `"FilterCategories"`: A list of one or more Amazon Location categories to filter the
+  returned places. If you include more than one category, the results will include results
+  that match any of the categories listed. For more information about using categories,
+  including a list of Amazon Location categories, see Categories and filtering, in the Amazon
+  Location Service Developer Guide.
 - `"FilterCountries"`: An optional parameter that limits the search results by returning
   only places that are in a specified list of countries.   Valid values include ISO 3166
   3-digit country codes. For example, Australia uses three upper-case characters: AUS.
@@ -2311,6 +2329,7 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   will be in a language that the provider does support.
 - `"MaxResults"`: An optional parameter. The maximum number of results returned per
   request.  The default: 50
+- `"key"`: The optional API key to authorize the request.
 """
 function search_place_index_for_text(
     IndexName, Text; aws_config::AbstractAWSConfig=global_aws_config()
@@ -2468,9 +2487,7 @@ end
     update_key(key_name)
     update_key(key_name, params::Dict{String,<:Any})
 
-Updates the specified properties of a given API key resource.  The API keys feature is in
-preview. We may add, change, or remove features before announcing general availability. For
-more information, see Using API keys.
+Updates the specified properties of a given API key resource.
 
 # Arguments
 - `key_name`: The name of the API key resource to update.
@@ -2630,6 +2647,9 @@ Updates the specified properties of a given tracker resource.
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
 - `"Description"`: Updates the description for the tracker resource.
+- `"EventBridgeEnabled"`: Whether to enable position UPDATE events from this tracker to be
+  sent to EventBridge.  You do not need enable this feature to get ENTER and EXIT events for
+  geofences with this tracker. Those events are always sent to EventBridge.
 - `"PositionFiltering"`: Updates the position filtering for the tracker resource. Valid
   values:    TimeBased - Location updates are evaluated against linked geofence collections,
   but not every location update is stored. If your update frequency is more often than 30

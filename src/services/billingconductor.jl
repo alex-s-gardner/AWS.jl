@@ -194,7 +194,7 @@ Services charges, based off of the predefined pricing plan computation.
 
 # Arguments
 - `account_grouping`:  The set of accounts that will be under the billing group. The set of
-  accounts resemble the linked accounts in a consolidated family.
+  accounts resemble the linked accounts in a consolidated billing family.
 - `computation_preference`:  The preferences and settings that will be used to compute the
   Amazon Web Services charges for a billing group.
 - `name`:  The billing group name. The names must be unique.
@@ -1178,6 +1178,8 @@ This updates an existing billing group.
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"AccountGrouping"`: Specifies if the billing group has automatic account association
+  (AutoAssociate) enabled.
 - `"ComputationPreference"`:  The preferences and settings that will be used to compute the
   Amazon Web Services charges for a billing group.
 - `"Description"`: A description of the billing group.

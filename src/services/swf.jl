@@ -1776,6 +1776,17 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
 - `"decisions"`: The list of decisions (possibly empty) made by the decider while
   processing this decision task. See the docs for the Decision structure for details.
 - `"executionContext"`: User defined context to add to workflow execution.
+- `"taskList"`: The task list to use for the future decision tasks of this workflow
+  execution. This list overrides the original task list you specified while starting the
+  workflow execution.
+- `"taskListScheduleToStartTimeout"`: Specifies a timeout (in seconds) for the task list
+  override. When this parameter is missing, the task list override is permanent. This
+  parameter makes it possible to temporarily override the task list. If a decision task
+  scheduled on the override task list is not started within the timeout, the decision task
+  will time out. Amazon SWF will revert the override and schedule a new decision task to the
+  original task list. If a decision task scheduled on the override task list is started
+  within the timeout, but not completed within the start-to-close timeout, Amazon SWF will
+  also revert the override and schedule a new decision task to the original task list.
 """
 function respond_decision_task_completed(
     taskToken; aws_config::AbstractAWSConfig=global_aws_config()

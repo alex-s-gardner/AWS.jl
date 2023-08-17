@@ -238,15 +238,15 @@ end
     batch_import_evidence_to_assessment_control(assessment_id, control_id, control_set_id, manual_evidence)
     batch_import_evidence_to_assessment_control(assessment_id, control_id, control_set_id, manual_evidence, params::Dict{String,<:Any})
 
-Uploads one or more pieces of evidence to a control in an Audit Manager assessment. You can
-upload manual evidence from any Amazon Simple Storage Service (Amazon S3) bucket by
-specifying the S3 URI of the evidence.  You must upload manual evidence to your S3 bucket
-before you can upload it to your assessment. For instructions, see CreateBucket and
-PutObject in the Amazon Simple Storage Service API Reference.  The following restrictions
-apply to this action:   Maximum size of an individual evidence file: 100 MB   Number of
-daily manual evidence uploads per control: 100   Supported file formats: See Supported file
-types for manual evidence in the Audit Manager User Guide    For more information about
-Audit Manager service restrictions, see Quotas and restrictions for Audit Manager.
+Adds one or more pieces of evidence to a control in an Audit Manager assessment.  You can
+import manual evidence from any S3 bucket by specifying the S3 URI of the object. You can
+also upload a file from your browser, or enter plain text in response to a risk assessment
+question.  The following restrictions apply to this action:    manualEvidence can be only
+one of the following: evidenceFileName, s3ResourcePath, or textResponse    Maximum size of
+an individual evidence file: 100 MB   Number of daily manual evidence uploads per control:
+100   Supported file formats: See Supported file types for manual evidence in the Audit
+Manager User Guide    For more information about Audit Manager service restrictions, see
+Quotas and restrictions for Audit Manager.
 
 # Arguments
 - `assessment_id`:  The identifier for the assessment.
@@ -671,7 +671,11 @@ end
     delete_control(control_id)
     delete_control(control_id, params::Dict{String,<:Any})
 
- Deletes a custom control in Audit Manager.
+ Deletes a custom control in Audit Manager.   When you invoke this operation, the custom
+control is deleted from any frameworks or assessments that it’s currently part of. As a
+result, Audit Manager will stop collecting evidence for that custom control in all of your
+assessments. This includes assessments that you previously created before you deleted the
+custom control.
 
 # Arguments
 - `control_id`:  The unique identifier for the control.
@@ -838,7 +842,7 @@ end
     get_account_status()
     get_account_status(params::Dict{String,<:Any})
 
- Returns the registration status of an account in Audit Manager.
+ Gets the registration status of an account in Audit Manager.
 
 """
 function get_account_status(; aws_config::AbstractAWSConfig=global_aws_config())
@@ -862,7 +866,7 @@ end
     get_assessment(assessment_id)
     get_assessment(assessment_id, params::Dict{String,<:Any})
 
-Returns an assessment from Audit Manager.
+Gets information about a specified assessment.
 
 # Arguments
 - `assessment_id`: The unique identifier for the assessment.
@@ -894,7 +898,7 @@ end
     get_assessment_framework(framework_id)
     get_assessment_framework(framework_id, params::Dict{String,<:Any})
 
-Returns a framework from Audit Manager.
+Gets information about a specified framework.
 
 # Arguments
 - `framework_id`:  The identifier for the framework.
@@ -928,7 +932,7 @@ end
     get_assessment_report_url(assessment_id, assessment_report_id)
     get_assessment_report_url(assessment_id, assessment_report_id, params::Dict{String,<:Any})
 
- Returns the URL of an assessment report in Audit Manager.
+ Gets the URL of an assessment report in Audit Manager.
 
 # Arguments
 - `assessment_id`:  The unique identifier for the assessment.
@@ -964,7 +968,7 @@ end
     get_change_logs(assessment_id)
     get_change_logs(assessment_id, params::Dict{String,<:Any})
 
- Returns a list of changelogs from Audit Manager.
+ Gets a list of changelogs from Audit Manager.
 
 # Arguments
 - `assessment_id`: The unique identifier for the assessment.
@@ -1003,7 +1007,7 @@ end
     get_control(control_id)
     get_control(control_id, params::Dict{String,<:Any})
 
- Returns a control from Audit Manager.
+ Gets information about a specified control.
 
 # Arguments
 - `control_id`:  The identifier for the control.
@@ -1035,7 +1039,7 @@ end
     get_delegations()
     get_delegations(params::Dict{String,<:Any})
 
- Returns a list of delegations from an audit owner to a delegate.
+ Gets a list of delegations from an audit owner to a delegate.
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
@@ -1064,7 +1068,7 @@ end
     get_evidence(assessment_id, control_set_id, evidence_folder_id, evidence_id)
     get_evidence(assessment_id, control_set_id, evidence_folder_id, evidence_id, params::Dict{String,<:Any})
 
- Returns evidence from Audit Manager.
+ Gets information about a specified evidence item.
 
 # Arguments
 - `assessment_id`:  The unique identifier for the assessment.
@@ -1109,7 +1113,7 @@ end
     get_evidence_by_evidence_folder(assessment_id, control_set_id, evidence_folder_id)
     get_evidence_by_evidence_folder(assessment_id, control_set_id, evidence_folder_id, params::Dict{String,<:Any})
 
- Returns all evidence from a specified evidence folder in Audit Manager.
+ Gets all evidence from a specified evidence folder in Audit Manager.
 
 # Arguments
 - `assessment_id`:  The identifier for the assessment.
@@ -1153,10 +1157,54 @@ function get_evidence_by_evidence_folder(
 end
 
 """
+    get_evidence_file_upload_url(file_name)
+    get_evidence_file_upload_url(file_name, params::Dict{String,<:Any})
+
+Creates a presigned Amazon S3 URL that can be used to upload a file as manual evidence. For
+instructions on how to use this operation, see Upload a file from your browser  in the
+Audit Manager User Guide. The following restrictions apply to this operation:   Maximum
+size of an individual evidence file: 100 MB   Number of daily manual evidence uploads per
+control: 100   Supported file formats: See Supported file types for manual evidence in the
+Audit Manager User Guide    For more information about Audit Manager service restrictions,
+see Quotas and restrictions for Audit Manager.
+
+# Arguments
+- `file_name`: The file that you want to upload. For a list of supported file formats, see
+  Supported file types for manual evidence in the Audit Manager User Guide.
+
+"""
+function get_evidence_file_upload_url(
+    fileName; aws_config::AbstractAWSConfig=global_aws_config()
+)
+    return auditmanager(
+        "GET",
+        "/evidenceFileUploadUrl",
+        Dict{String,Any}("fileName" => fileName);
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function get_evidence_file_upload_url(
+    fileName,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return auditmanager(
+        "GET",
+        "/evidenceFileUploadUrl",
+        Dict{String,Any}(
+            mergewith(_merge, Dict{String,Any}("fileName" => fileName), params)
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
     get_evidence_folder(assessment_id, control_set_id, evidence_folder_id)
     get_evidence_folder(assessment_id, control_set_id, evidence_folder_id, params::Dict{String,<:Any})
 
- Returns an evidence folder from the specified assessment in Audit Manager.
+ Gets an evidence folder from a specified assessment in Audit Manager.
 
 # Arguments
 - `assessment_id`:  The unique identifier for the assessment.
@@ -1198,7 +1246,7 @@ end
     get_evidence_folders_by_assessment(assessment_id)
     get_evidence_folders_by_assessment(assessment_id, params::Dict{String,<:Any})
 
- Returns the evidence folders from a specified assessment in Audit Manager.
+ Gets the evidence folders from a specified assessment in Audit Manager.
 
 # Arguments
 - `assessment_id`:  The unique identifier for the assessment.
@@ -1237,8 +1285,8 @@ end
     get_evidence_folders_by_assessment_control(assessment_id, control_id, control_set_id)
     get_evidence_folders_by_assessment_control(assessment_id, control_id, control_set_id, params::Dict{String,<:Any})
 
- Returns a list of evidence folders that are associated with a specified control in an
-Audit Manager assessment.
+ Gets a list of evidence folders that are associated with a specified control in an Audit
+Manager assessment.
 
 # Arguments
 - `assessment_id`:  The identifier for the assessment.
@@ -1335,7 +1383,7 @@ end
     get_organization_admin_account()
     get_organization_admin_account(params::Dict{String,<:Any})
 
- Returns the name of the delegated Amazon Web Services administrator account for the
+ Gets the name of the delegated Amazon Web Services administrator account for a specified
 organization.
 
 """
@@ -1363,7 +1411,7 @@ end
     get_services_in_scope()
     get_services_in_scope(params::Dict{String,<:Any})
 
-Returns a list of all of the Amazon Web Services that you can choose to include in your
+Gets a list of all of the Amazon Web Services that you can choose to include in your
 assessment. When you create an assessment, specify which of these services you want to
 include to narrow the assessment's scope.
 
@@ -1385,7 +1433,7 @@ end
     get_settings(attribute)
     get_settings(attribute, params::Dict{String,<:Any})
 
- Returns the settings for the specified Amazon Web Services account.
+ Gets the settings for a specified Amazon Web Services account.
 
 # Arguments
 - `attribute`:  The list of setting attribute enum values.
@@ -2435,8 +2483,10 @@ end
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
-- `"defaultAssessmentReportsDestination"`:  The default storage destination for assessment
-  reports.
+- `"defaultAssessmentReportsDestination"`:  The default S3 destination bucket for storing
+  assessment reports.
+- `"defaultExportDestination"`:  The default S3 destination bucket for storing evidence
+  finder exports.
 - `"defaultProcessOwners"`:  A list of the default audit owners.
 - `"deregistrationPolicy"`: The deregistration policy for your Audit Manager data. You can
   use this attribute to determine how your data is handled when you deregister Audit Manager.

@@ -190,12 +190,12 @@ set, see \"Examples.\" Don't refer to the syntax in the \"Parameter Syntax\" sec
 includes all of the elements for every kind of resource record set that you can create,
 delete, or update by using ChangeResourceRecordSets.   Change Propagation to Route 53 DNS
 Servers  When you submit a ChangeResourceRecordSets request, Route 53 propagates your
-changes to all of the Route 53 authoritative DNS servers. While your changes are
-propagating, GetChange returns a status of PENDING. When propagation is complete, GetChange
-returns a status of INSYNC. Changes generally propagate to all Route 53 name servers within
-60 seconds. For more information, see GetChange.  Limits on ChangeResourceRecordSets
-Requests  For information about the limits on a ChangeResourceRecordSets request, see
-Limits in the Amazon Route 53 Developer Guide.
+changes to all of the Route 53 authoritative DNS servers managing the hosted zone. While
+your changes are propagating, GetChange returns a status of PENDING. When propagation is
+complete, GetChange returns a status of INSYNC. Changes generally propagate to all Route 53
+name servers managing the hosted zone within 60 seconds. For more information, see
+GetChange.  Limits on ChangeResourceRecordSets Requests  For information about the limits
+on a ChangeResourceRecordSets request, see Limits in the Amazon Route 53 Developer Guide.
 
 # Arguments
 - `change_batch`: A complex type that contains an optional comment and the Changes element.
@@ -447,6 +447,9 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
 - `"DelegationSetId"`: If you want to associate a reusable delegation set with this hosted
   zone, the ID that Amazon Route 53 assigned to the reusable delegation set when you created
   it. For more information about reusable delegation sets, see CreateReusableDelegationSet.
+  If you are using a reusable delegation set to create a public hosted zone for a subdomain,
+  make sure that the parent hosted zone doesn't use one or more of the same name servers. If
+  you have overlapping nameservers, the operation will cause a ConflictingDomainsExist error.
 - `"HostedZoneConfig"`: (Optional) A complex type that contains the following optional
   values:   For public and private hosted zones, an optional comment   For private hosted
   zones, an optional PrivateZone element   If you don't specify a comment or the PrivateZone
@@ -1534,8 +1537,9 @@ end
 
 Returns the current status of a change batch request. The status is one of the following
 values:    PENDING indicates that the changes in this request have not propagated to all
-Amazon Route 53 DNS servers. This is the initial status of all change batch requests.
-INSYNC indicates that the changes have propagated to all Route 53 DNS servers.
+Amazon Route 53 DNS servers managing the hosted zone. This is the initial status of all
+change batch requests.    INSYNC indicates that the changes have propagated to all Route 53
+DNS servers managing the hosted zone.
 
 # Arguments
 - `id`: The ID of the change batch request. The value that you specify here is the value
@@ -3098,7 +3102,9 @@ end
 Gets the value that Amazon Route 53 returns in response to a DNS request for a specified
 record name and type. You can optionally specify the IP address of a DNS resolver, an EDNS0
 client subnet IP address, and a subnet mask.  This call only supports querying public
-hosted zones.
+hosted zones.  The TestDnsAnswer  returns information similar to what you would expect from
+the answer section of the dig command. Therefore, if you query for the name servers of a
+subdomain that point to the parent name servers, those will not be returned.
 
 # Arguments
 - `hostedzoneid`: The ID of the hosted zone that you want Amazon Route 53 to simulate a

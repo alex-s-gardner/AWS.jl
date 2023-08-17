@@ -500,9 +500,14 @@ end
     create_auto_mljob(auto_mljob_name, input_data_config, output_data_config, role_arn)
     create_auto_mljob(auto_mljob_name, input_data_config, output_data_config, role_arn, params::Dict{String,<:Any})
 
-Creates an Autopilot job. Find the best-performing model after you run an Autopilot job by
-calling DescribeAutoMLJob. For information about how to use Autopilot, see Automate Model
-Development with Amazon SageMaker Autopilot.
+Creates an Autopilot job also referred to as Autopilot experiment or AutoML job.  We
+recommend using the new versions CreateAutoMLJobV2 and DescribeAutoMLJobV2, which offer
+backward compatibility.  CreateAutoMLJobV2 can manage tabular problem types identical to
+those of its previous version CreateAutoMLJob, as well as non-tabular problem types such as
+image or text classification. Find guidelines about how to migrate a CreateAutoMLJob to
+CreateAutoMLJobV2 in Migrate a CreateAutoMLJob to CreateAutoMLJobV2.  You can find the
+best-performing model after you run an AutoML job by calling DescribeAutoMLJobV2
+(recommended) or DescribeAutoMLJob.
 
 # Arguments
 - `auto_mljob_name`: Identifies an Autopilot job. The name must be unique to your account
@@ -519,9 +524,9 @@ Development with Amazon SageMaker Autopilot.
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
 - `"AutoMLJobConfig"`: A collection of settings used to configure an AutoML job.
-- `"AutoMLJobObjective"`: Defines the objective metric used to measure the predictive
-  quality of an AutoML job. You provide an AutoMLJobObjectiveMetricName and Autopilot infers
-  whether to minimize or maximize it. For CreateAutoMLJobV2, only Accuracy is supported.
+- `"AutoMLJobObjective"`: Specifies a metric to minimize or maximize as the objective of a
+  job. If not specified, the default objective metric depends on the problem type. See
+  AutoMLJobObjective for the default values.
 - `"GenerateCandidateDefinitionsOnly"`: Generates possible candidates without training the
   models. A candidate is a combination of data preprocessors, algorithms, and algorithm
   parameter settings.
@@ -584,18 +589,23 @@ end
     create_auto_mljob_v2(auto_mljob_input_data_config, auto_mljob_name, auto_mlproblem_type_config, output_data_config, role_arn)
     create_auto_mljob_v2(auto_mljob_input_data_config, auto_mljob_name, auto_mlproblem_type_config, output_data_config, role_arn, params::Dict{String,<:Any})
 
-Creates an Amazon SageMaker AutoML job that uses non-tabular data such as images or text
-for Computer Vision or Natural Language Processing problems. Find the resulting model after
-you run an AutoML job V2 by calling DescribeAutoMLJobV2. To create an AutoMLJob using
-tabular data, see CreateAutoMLJob.  This API action is callable through SageMaker Canvas
-only. Calling it directly from the CLI or an SDK results in an error.
+Creates an Autopilot job also referred to as Autopilot experiment or AutoML job V2.
+CreateAutoMLJobV2 and DescribeAutoMLJobV2 are new versions of CreateAutoMLJob and
+DescribeAutoMLJob which offer backward compatibility.  CreateAutoMLJobV2 can manage tabular
+problem types identical to those of its previous version CreateAutoMLJob, as well as
+non-tabular problem types such as image or text classification. Find guidelines about how
+to migrate a CreateAutoMLJob to CreateAutoMLJobV2 in Migrate a CreateAutoMLJob to
+CreateAutoMLJobV2.  For the list of available problem types supported by CreateAutoMLJobV2,
+see AutoMLProblemTypeConfig. You can find the best-performing model after you run an AutoML
+job V2 by calling DescribeAutoMLJobV2.
 
 # Arguments
 - `auto_mljob_input_data_config`: An array of channel objects describing the input data and
-  their location. Each channel is a named input source. Similar to InputDataConfig supported
-  by CreateAutoMLJob. The supported formats depend on the problem type:
-  ImageClassification: S3Prefix, ManifestFile, AugmentedManifestFile    TextClassification:
-  S3Prefix
+  their location. Each channel is a named input source. Similar to the InputDataConfig
+  attribute in the CreateAutoMLJob input parameters. The supported formats depend on the
+  problem type:   For tabular problem types: S3Prefix, ManifestFile.   For image
+  classification: S3Prefix, ManifestFile, AugmentedManifestFile.   For text classification:
+  S3Prefix.   For time-series forecasting: S3Prefix.
 - `auto_mljob_name`: Identifies an Autopilot job. The name must be unique to your account
   and is case insensitive.
 - `auto_mlproblem_type_config`: Defines the configuration settings of one of the supported
@@ -607,13 +617,16 @@ only. Calling it directly from the CLI or an SDK results in an error.
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
 - `"AutoMLJobObjective"`: Specifies a metric to minimize or maximize as the objective of a
-  job. For CreateAutoMLJobV2, only Accuracy is supported.
+  job. If not specified, the default objective metric depends on the problem type. For the
+  list of default values per problem type, see AutoMLJobObjective.  For tabular problem
+  types, you must either provide both the AutoMLJobObjective and indicate the type of
+  supervised learning problem in AutoMLProblemTypeConfig (TabularJobConfig.ProblemType), or
+  none at all.
 - `"DataSplitConfig"`: This structure specifies how to split the data into train and
-  validation datasets. If you are using the V1 API (for example CreateAutoMLJob) or the V2
-  API for Natural Language Processing problems (for example CreateAutoMLJobV2 with a
-  TextClassificationJobConfig problem type), the validation and training datasets must
-  contain the same headers. Also, for V1 API jobs, the validation dataset must be less than 2
-  GB in size.
+  validation datasets. The validation and training datasets must contain the same headers.
+  For jobs created by calling CreateAutoMLJob, the validation dataset must be less than 2 GB
+  in size.  This attribute must not be set for the time-series forecasting problem type, as
+  Autopilot automatically splits the input dataset into training and validation sets.
 - `"ModelDeployConfig"`: Specifies how to generate the endpoint name for an automatic
   one-click Autopilot model deployment.
 - `"SecurityConfig"`: The security configuration for traffic encryption or Amazon VPC
@@ -1318,40 +1331,38 @@ end
 Creates an endpoint using the endpoint configuration specified in the request. SageMaker
 uses the endpoint to provision resources and deploy models. You create the endpoint
 configuration with the CreateEndpointConfig API.   Use this API to deploy models using
-SageMaker hosting services.  For an example that calls this method when deploying a model
-to SageMaker hosting services, see the Create Endpoint example notebook.    You must not
-delete an EndpointConfig that is in use by an endpoint that is live or while the
-UpdateEndpoint or CreateEndpoint operations are being performed on the endpoint. To update
-an endpoint, you must create a new EndpointConfig.  The endpoint name must be unique within
-an Amazon Web Services Region in your Amazon Web Services account.  When it receives the
-request, SageMaker creates the endpoint, launches the resources (ML compute instances), and
-deploys the model(s) on them.   When you call CreateEndpoint, a load call is made to
-DynamoDB to verify that your endpoint configuration exists. When you read data from a
-DynamoDB table supporting  Eventually Consistent Reads , the response might not reflect the
-results of a recently completed write operation. The response might include some stale
-data. If the dependent entities are not yet in DynamoDB, this causes a validation error. If
-you repeat your read request after a short time, the response should return the latest
-data. So retry logic is recommended to handle these possible issues. We also recommend that
-customers call DescribeEndpointConfig before calling CreateEndpoint to minimize the
-potential impact of a DynamoDB eventually consistent read.  When SageMaker receives the
-request, it sets the endpoint status to Creating. After it creates the endpoint, it sets
-the status to InService. SageMaker can then process incoming requests for inferences. To
-check the status of an endpoint, use the DescribeEndpoint API. If any of the models hosted
-at this endpoint get model data from an Amazon S3 location, SageMaker uses Amazon Web
-Services Security Token Service to download model artifacts from the S3 path you provided.
-Amazon Web Services STS is activated in your Amazon Web Services account by default. If you
-previously deactivated Amazon Web Services STS for a region, you need to reactivate Amazon
-Web Services STS for that region. For more information, see Activating and Deactivating
-Amazon Web Services STS in an Amazon Web Services Region in the Amazon Web Services
-Identity and Access Management User Guide.   To add the IAM role policies for using this
-API operation, go to the IAM console, and choose Roles in the left navigation pane. Search
-the IAM role that you want to grant access to use the CreateEndpoint and
-CreateEndpointConfig API operations, add the following policies to the role.    Option 1:
-For a full SageMaker access, search and attach the AmazonSageMakerFullAccess policy.
-Option 2: For granting a limited access to an IAM role, paste the following Action elements
-manually into the JSON file of the IAM role:   \"Action\": [\"sagemaker:CreateEndpoint\",
-\"sagemaker:CreateEndpointConfig\"]   \"Resource\": [
-\"arn:aws:sagemaker:region:account-id:endpoint/endpointName\"
+SageMaker hosting services.    You must not delete an EndpointConfig that is in use by an
+endpoint that is live or while the UpdateEndpoint or CreateEndpoint operations are being
+performed on the endpoint. To update an endpoint, you must create a new EndpointConfig.
+The endpoint name must be unique within an Amazon Web Services Region in your Amazon Web
+Services account.  When it receives the request, SageMaker creates the endpoint, launches
+the resources (ML compute instances), and deploys the model(s) on them.   When you call
+CreateEndpoint, a load call is made to DynamoDB to verify that your endpoint configuration
+exists. When you read data from a DynamoDB table supporting  Eventually Consistent Reads ,
+the response might not reflect the results of a recently completed write operation. The
+response might include some stale data. If the dependent entities are not yet in DynamoDB,
+this causes a validation error. If you repeat your read request after a short time, the
+response should return the latest data. So retry logic is recommended to handle these
+possible issues. We also recommend that customers call DescribeEndpointConfig before
+calling CreateEndpoint to minimize the potential impact of a DynamoDB eventually consistent
+read.  When SageMaker receives the request, it sets the endpoint status to Creating. After
+it creates the endpoint, it sets the status to InService. SageMaker can then process
+incoming requests for inferences. To check the status of an endpoint, use the
+DescribeEndpoint API. If any of the models hosted at this endpoint get model data from an
+Amazon S3 location, SageMaker uses Amazon Web Services Security Token Service to download
+model artifacts from the S3 path you provided. Amazon Web Services STS is activated in your
+Amazon Web Services account by default. If you previously deactivated Amazon Web Services
+STS for a region, you need to reactivate Amazon Web Services STS for that region. For more
+information, see Activating and Deactivating Amazon Web Services STS in an Amazon Web
+Services Region in the Amazon Web Services Identity and Access Management User Guide.   To
+add the IAM role policies for using this API operation, go to the IAM console, and choose
+Roles in the left navigation pane. Search the IAM role that you want to grant access to use
+the CreateEndpoint and CreateEndpointConfig API operations, add the following policies to
+the role.    Option 1: For a full SageMaker access, search and attach the
+AmazonSageMakerFullAccess policy.   Option 2: For granting a limited access to an IAM role,
+paste the following Action elements manually into the JSON file of the IAM role:
+\"Action\": [\"sagemaker:CreateEndpoint\", \"sagemaker:CreateEndpointConfig\"]
+\"Resource\": [   \"arn:aws:sagemaker:region:account-id:endpoint/endpointName\"
 \"arn:aws:sagemaker:region:account-id:endpoint-config/endpointConfigName\"   ]  For more
 information, see SageMaker API Permissions: Actions, Permissions, and Resources Reference.
 
@@ -2643,7 +2654,7 @@ Creates an Amazon SageMaker Model Card export job.
 
 # Arguments
 - `model_card_export_job_name`: The name of the model card export job.
-- `model_card_name`: The name of the model card to export.
+- `model_card_name`: The name or Amazon Resource Name (ARN) of the model card to export.
 - `output_config`: The model card output configuration that specifies the Amazon S3 path
   for exporting.
 
@@ -2834,6 +2845,9 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   model package.
 - `"Tags"`: A list of key value pairs associated with the model. For more information, see
   Tagging Amazon Web Services resources in the Amazon Web Services General Reference Guide.
+  If you supply ModelPackageGroupName, your model package belongs to the model group you
+  specify and uses the tags associated with the model group. In this case, you cannot supply
+  a tag argument.
 - `"Task"`: The machine learning task your model package accomplishes. Common machine
   learning tasks include object detection and image classification. The following tasks are
   supported by Inference Recommender: \"IMAGE_CLASSIFICATION\" | \"OBJECT_DETECTION\" |
@@ -6257,7 +6271,8 @@ end
     describe_auto_mljob(auto_mljob_name)
     describe_auto_mljob(auto_mljob_name, params::Dict{String,<:Any})
 
-Returns information about an Amazon SageMaker AutoML job.
+Returns information about an AutoML job created by calling CreateAutoMLJob.  AutoML jobs
+created by calling CreateAutoMLJobV2 cannot be described by DescribeAutoMLJob.
 
 # Arguments
 - `auto_mljob_name`: Requests information about an AutoML job using its unique name.
@@ -6292,12 +6307,11 @@ end
     describe_auto_mljob_v2(auto_mljob_name)
     describe_auto_mljob_v2(auto_mljob_name, params::Dict{String,<:Any})
 
-Returns information about an Amazon SageMaker AutoML V2 job.  This API action is callable
-through SageMaker Canvas only. Calling it directly from the CLI or an SDK results in an
-error.
+Returns information about an AutoML job created by calling CreateAutoMLJobV2 or
+CreateAutoMLJob.
 
 # Arguments
-- `auto_mljob_name`: Requests information about an AutoML V2 job using its unique name.
+- `auto_mljob_name`: Requests information about an AutoML job V2 using its unique name.
 
 """
 function describe_auto_mljob_v2(
@@ -6785,7 +6799,8 @@ Use this operation to describe a FeatureGroup. The response includes information
 creation time, FeatureGroup name, the unique identifier for each FeatureGroup, and more.
 
 # Arguments
-- `feature_group_name`: The name of the FeatureGroup you want described.
+- `feature_group_name`: The name or Amazon Resource Name (ARN) of the FeatureGroup you want
+  described.
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
@@ -6826,7 +6841,8 @@ end
 Shows the metadata for a feature within a feature group.
 
 # Arguments
-- `feature_group_name`: The name of the feature group containing the feature.
+- `feature_group_name`: The name or Amazon Resource Name (ARN) of the feature group
+  containing the feature.
 - `feature_name`: The name of the feature.
 
 """
@@ -7358,7 +7374,7 @@ Describes the content, creation time, and security configuration of an Amazon Sa
 Model Card.
 
 # Arguments
-- `model_card_name`: The name of the model card to describe.
+- `model_card_name`: The name or Amazon Resource Name (ARN) of the model card to describe.
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
@@ -8522,6 +8538,65 @@ function get_sagemaker_servicecatalog_portfolio_status(
     return sagemaker(
         "GetSagemakerServicecatalogPortfolioStatus",
         params;
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
+    get_scaling_configuration_recommendation(inference_recommendations_job_name)
+    get_scaling_configuration_recommendation(inference_recommendations_job_name, params::Dict{String,<:Any})
+
+Starts an Amazon SageMaker Inference Recommender autoscaling recommendation job. Returns
+recommendations for autoscaling policies that you can apply to your SageMaker endpoint.
+
+# Arguments
+- `inference_recommendations_job_name`: The name of a previously completed Inference
+  Recommender job.
+
+# Optional Parameters
+Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"EndpointName"`: The name of an endpoint benchmarked during a previously completed
+  inference recommendation job. This name should come from one of the recommendations
+  returned by the job specified in the InferenceRecommendationsJobName field. Specify either
+  this field or the RecommendationId field.
+- `"RecommendationId"`: The recommendation ID of a previously completed inference
+  recommendation. This ID should come from one of the recommendations returned by the job
+  specified in the InferenceRecommendationsJobName field. Specify either this field or the
+  EndpointName field.
+- `"ScalingPolicyObjective"`: An object where you specify the anticipated traffic pattern
+  for an endpoint.
+- `"TargetCpuUtilizationPerCore"`: The percentage of how much utilization you want an
+  instance to use before autoscaling. The default value is 50%.
+"""
+function get_scaling_configuration_recommendation(
+    InferenceRecommendationsJobName; aws_config::AbstractAWSConfig=global_aws_config()
+)
+    return sagemaker(
+        "GetScalingConfigurationRecommendation",
+        Dict{String,Any}(
+            "InferenceRecommendationsJobName" => InferenceRecommendationsJobName
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function get_scaling_configuration_recommendation(
+    InferenceRecommendationsJobName,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return sagemaker(
+        "GetScalingConfigurationRecommendation",
+        Dict{String,Any}(
+            mergewith(
+                _merge,
+                Dict{String,Any}(
+                    "InferenceRecommendationsJobName" => InferenceRecommendationsJobName
+                ),
+                params,
+            ),
+        );
         aws_config=aws_config,
         feature_set=SERVICE_FEATURE_SET,
     )
@@ -10158,7 +10233,8 @@ end
 List existing versions of an Amazon SageMaker Model Card.
 
 # Arguments
-- `model_card_name`: List model card versions for the model card with the specified name.
+- `model_card_name`: List model card versions for the model card with the specified name or
+  Amazon Resource Name (ARN).
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
@@ -10971,6 +11047,42 @@ function list_projects(
 end
 
 """
+    list_resource_catalogs()
+    list_resource_catalogs(params::Dict{String,<:Any})
+
+ Lists Amazon SageMaker Catalogs based on given filters and orders. The maximum number of
+ResourceCatalogs viewable is 1000.
+
+# Optional Parameters
+Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"CreationTimeAfter"`:  Use this parameter to search for ResourceCatalogs created after a
+  specific date and time.
+- `"CreationTimeBefore"`:  Use this parameter to search for ResourceCatalogs created before
+  a specific date and time.
+- `"MaxResults"`:  The maximum number of results returned by ListResourceCatalogs.
+- `"NameContains"`:  A string that partially matches one or more ResourceCatalogs names.
+  Filters ResourceCatalog by name.
+- `"NextToken"`:  A token to resume pagination of ListResourceCatalogs results.
+- `"SortBy"`:  The value on which the resource catalog list is sorted.
+- `"SortOrder"`:  The order in which the resource catalogs are listed.
+"""
+function list_resource_catalogs(; aws_config::AbstractAWSConfig=global_aws_config())
+    return sagemaker(
+        "ListResourceCatalogs"; aws_config=aws_config, feature_set=SERVICE_FEATURE_SET
+    )
+end
+function list_resource_catalogs(
+    params::AbstractDict{String}; aws_config::AbstractAWSConfig=global_aws_config()
+)
+    return sagemaker(
+        "ListResourceCatalogs",
+        params;
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
     list_spaces()
     list_spaces(params::Dict{String,<:Any})
 
@@ -11739,6 +11851,12 @@ Resources Reference for more information.
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"CrossAccountFilterOption"`:  A cross account filter option. When the value is
+  \"CrossAccount\" the search results will only include resources made discoverable to you
+  from other accounts. When the value is \"SameAccount\" or null the search results will only
+  include resources from your account. Default is null. For more information on searching for
+  resources made discoverable to your account, see  Search discoverable resources in the
+  SageMaker Developer Guide. The maximum number of ResourceCatalogs viewable is 1000.
 - `"MaxResults"`: The maximum number of results to return.
 - `"NextToken"`: If more than MaxResults resources match the specified SearchExpression,
   the response includes a NextToken. The NextToken can be passed to the next SearchRequest to
@@ -13193,10 +13311,19 @@ end
     update_feature_group(feature_group_name)
     update_feature_group(feature_group_name, params::Dict{String,<:Any})
 
-Updates the feature group.
+Updates the feature group by either adding features or updating the online store
+configuration. Use one of the following request parameters at a time while using the
+UpdateFeatureGroup API. You can add features for your feature group using the
+FeatureAdditions request parameter. Features cannot be removed from a feature group. You
+can update the online store configuration by using the OnlineStoreConfig request parameter.
+If a TtlDuration is specified, the default TtlDuration applies for all records added to the
+feature group after the feature group is updated. If a record level TtlDuration exists from
+using the PutRecord API, the record level TtlDuration applies to that record instead of the
+default TtlDuration.
 
 # Arguments
-- `feature_group_name`: The name of the feature group that you're updating.
+- `feature_group_name`: The name or Amazon Resource Name (ARN) of the feature group that
+  you're updating.
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
@@ -13204,6 +13331,7 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   asynchronous operation. When you get an HTTP 200 response, you've made a valid request. It
   takes some time after you've made a valid request for Feature Store to update the feature
   group.
+- `"OnlineStoreConfig"`: Updates the feature group online store configuration.
 """
 function update_feature_group(
     FeatureGroupName; aws_config::AbstractAWSConfig=global_aws_config()
@@ -13239,8 +13367,8 @@ end
 Updates the description and parameters of the feature group.
 
 # Arguments
-- `feature_group_name`: The name of the feature group containing the feature that you're
-  updating.
+- `feature_group_name`: The name or Amazon Resource Name (ARN) of the feature group
+  containing the feature that you're updating.
 - `feature_name`: The name of the feature that you're updating.
 
 # Optional Parameters
@@ -13472,7 +13600,7 @@ Update an Amazon SageMaker Model Card.  You cannot update both model card conten
 card status in a single call.
 
 # Arguments
-- `model_card_name`: The name of the model card to update.
+- `model_card_name`: The name or Amazon Resource Name (ARN) of the model card to update.
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:

@@ -10,7 +10,7 @@ using AWS.UUIDs
 
 Creates a container for a collection of data being ingested for analysis. The dataset
 contains the metadata describing where the data is and what the data actually looks like.
-In other words, it contains the location of the data source, the data schema, and other
+For example, it contains the location of the data source, the data schema, and other
 information. A dataset also contains any tags associated with the ingested data.
 
 # Arguments
@@ -568,6 +568,42 @@ function delete_model(
 end
 
 """
+    delete_resource_policy(resource_arn)
+    delete_resource_policy(resource_arn, params::Dict{String,<:Any})
+
+Deletes the resource policy attached to the resource.
+
+# Arguments
+- `resource_arn`: The Amazon Resource Name (ARN) of the resource for which the resource
+  policy should be deleted.
+
+"""
+function delete_resource_policy(
+    ResourceArn; aws_config::AbstractAWSConfig=global_aws_config()
+)
+    return lookoutequipment(
+        "DeleteResourcePolicy",
+        Dict{String,Any}("ResourceArn" => ResourceArn);
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function delete_resource_policy(
+    ResourceArn,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return lookoutequipment(
+        "DeleteResourcePolicy",
+        Dict{String,Any}(
+            mergewith(_merge, Dict{String,Any}("ResourceArn" => ResourceArn), params)
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
     describe_data_ingestion_job(job_id)
     describe_data_ingestion_job(job_id, params::Dict{String,<:Any})
 
@@ -784,6 +820,203 @@ function describe_model(
 end
 
 """
+    describe_model_version(model_name, model_version)
+    describe_model_version(model_name, model_version, params::Dict{String,<:Any})
+
+Retrieves information about a specific machine learning model version.
+
+# Arguments
+- `model_name`: The name of the machine learning model that this version belongs to.
+- `model_version`: The version of the machine learning model.
+
+"""
+function describe_model_version(
+    ModelName, ModelVersion; aws_config::AbstractAWSConfig=global_aws_config()
+)
+    return lookoutequipment(
+        "DescribeModelVersion",
+        Dict{String,Any}("ModelName" => ModelName, "ModelVersion" => ModelVersion);
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function describe_model_version(
+    ModelName,
+    ModelVersion,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return lookoutequipment(
+        "DescribeModelVersion",
+        Dict{String,Any}(
+            mergewith(
+                _merge,
+                Dict{String,Any}("ModelName" => ModelName, "ModelVersion" => ModelVersion),
+                params,
+            ),
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
+    describe_resource_policy(resource_arn)
+    describe_resource_policy(resource_arn, params::Dict{String,<:Any})
+
+Provides the details of a resource policy attached to a resource.
+
+# Arguments
+- `resource_arn`: The Amazon Resource Name (ARN) of the resource that is associated with
+  the resource policy.
+
+"""
+function describe_resource_policy(
+    ResourceArn; aws_config::AbstractAWSConfig=global_aws_config()
+)
+    return lookoutequipment(
+        "DescribeResourcePolicy",
+        Dict{String,Any}("ResourceArn" => ResourceArn);
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function describe_resource_policy(
+    ResourceArn,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return lookoutequipment(
+        "DescribeResourcePolicy",
+        Dict{String,Any}(
+            mergewith(_merge, Dict{String,Any}("ResourceArn" => ResourceArn), params)
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
+    import_dataset(client_token, source_dataset_arn)
+    import_dataset(client_token, source_dataset_arn, params::Dict{String,<:Any})
+
+Imports a dataset.
+
+# Arguments
+- `client_token`: A unique identifier for the request. If you do not set the client request
+  token, Amazon Lookout for Equipment generates one.
+- `source_dataset_arn`: The Amazon Resource Name (ARN) of the dataset to import.
+
+# Optional Parameters
+Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"DatasetName"`: The name of the machine learning dataset to be created. If the dataset
+  already exists, Amazon Lookout for Equipment overwrites the existing dataset. If you don't
+  specify this field, it is filled with the name of the source dataset.
+- `"ServerSideKmsKeyId"`: Provides the identifier of the KMS key key used to encrypt model
+  data by Amazon Lookout for Equipment.
+- `"Tags"`: Any tags associated with the dataset to be created.
+"""
+function import_dataset(
+    ClientToken, SourceDatasetArn; aws_config::AbstractAWSConfig=global_aws_config()
+)
+    return lookoutequipment(
+        "ImportDataset",
+        Dict{String,Any}(
+            "ClientToken" => ClientToken, "SourceDatasetArn" => SourceDatasetArn
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function import_dataset(
+    ClientToken,
+    SourceDatasetArn,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return lookoutequipment(
+        "ImportDataset",
+        Dict{String,Any}(
+            mergewith(
+                _merge,
+                Dict{String,Any}(
+                    "ClientToken" => ClientToken, "SourceDatasetArn" => SourceDatasetArn
+                ),
+                params,
+            ),
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
+    import_model_version(client_token, dataset_name, source_model_version_arn)
+    import_model_version(client_token, dataset_name, source_model_version_arn, params::Dict{String,<:Any})
+
+Imports a model that has been trained successfully.
+
+# Arguments
+- `client_token`: A unique identifier for the request. If you do not set the client request
+  token, Amazon Lookout for Equipment generates one.
+- `dataset_name`: The name of the dataset for the machine learning model being imported.
+- `source_model_version_arn`: The Amazon Resource Name (ARN) of the model version to import.
+
+# Optional Parameters
+Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"LabelsInputConfiguration"`:
+- `"ModelName"`: The name for the machine learning model to be created. If the model
+  already exists, Amazon Lookout for Equipment creates a new version. If you do not specify
+  this field, it is filled with the name of the source model.
+- `"RoleArn"`: The Amazon Resource Name (ARN) of a role with permission to access the data
+  source being used to create the machine learning model.
+- `"ServerSideKmsKeyId"`: Provides the identifier of the KMS key key used to encrypt model
+  data by Amazon Lookout for Equipment.
+- `"Tags"`: The tags associated with the machine learning model to be created.
+"""
+function import_model_version(
+    ClientToken,
+    DatasetName,
+    SourceModelVersionArn;
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return lookoutequipment(
+        "ImportModelVersion",
+        Dict{String,Any}(
+            "ClientToken" => ClientToken,
+            "DatasetName" => DatasetName,
+            "SourceModelVersionArn" => SourceModelVersionArn,
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function import_model_version(
+    ClientToken,
+    DatasetName,
+    SourceModelVersionArn,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return lookoutequipment(
+        "ImportModelVersion",
+        Dict{String,Any}(
+            mergewith(
+                _merge,
+                Dict{String,Any}(
+                    "ClientToken" => ClientToken,
+                    "DatasetName" => DatasetName,
+                    "SourceModelVersionArn" => SourceModelVersionArn,
+                ),
+                params,
+            ),
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
     list_data_ingestion_jobs()
     list_data_ingestion_jobs(params::Dict{String,<:Any})
 
@@ -850,7 +1083,7 @@ end
 - `inference_scheduler_name`: The name of the inference scheduler for the inference events
   listed.
 - `interval_end_time`: Returns all the inference events with an end start time equal to or
-  greater than less than the end time given
+  greater than less than the end time given.
 - `interval_start_time`:  Lookout for Equipment will return all the inference events with
   an end time equal to or greater than the start time given.
 
@@ -967,7 +1200,7 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
 - `"ModelName"`: The name of the ML model used by the inference scheduler to be listed.
 - `"NextToken"`:  An opaque pagination token indicating where to continue the listing of
   inference schedulers.
-- `"Status"`: Specifies the current status of the inference schedulers to list.
+- `"Status"`: Specifies the current status of the inference schedulers.
 """
 function list_inference_schedulers(; aws_config::AbstractAWSConfig=global_aws_config())
     return lookoutequipment(
@@ -1050,6 +1283,57 @@ function list_labels(
         "ListLabels",
         Dict{String,Any}(
             mergewith(_merge, Dict{String,Any}("LabelGroupName" => LabelGroupName), params)
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
+    list_model_versions(model_name)
+    list_model_versions(model_name, params::Dict{String,<:Any})
+
+Generates a list of all model versions for a given model, including the model version,
+model version ARN, and status. To list a subset of versions, use the MaxModelVersion and
+MinModelVersion fields.
+
+# Arguments
+- `model_name`: Then name of the machine learning model for which the model versions are to
+  be listed.
+
+# Optional Parameters
+Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"CreatedAtEndTime"`: Filter results to return all the model versions created before this
+  time.
+- `"CreatedAtStartTime"`: Filter results to return all the model versions created after
+  this time.
+- `"MaxModelVersion"`: Specifies the highest version of the model to return in the list.
+- `"MaxResults"`: Specifies the maximum number of machine learning model versions to list.
+- `"MinModelVersion"`: Specifies the lowest version of the model to return in the list.
+- `"NextToken"`: If the total number of results exceeds the limit that the response can
+  display, the response returns an opaque pagination token indicating where to continue the
+  listing of machine learning model versions. Use this token in the NextToken field in the
+  request to list the next page of results.
+- `"SourceType"`: Filter the results based on the way the model version was generated.
+- `"Status"`: Filter the results based on the current status of the model version.
+"""
+function list_model_versions(ModelName; aws_config::AbstractAWSConfig=global_aws_config())
+    return lookoutequipment(
+        "ListModelVersions",
+        Dict{String,Any}("ModelName" => ModelName);
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function list_model_versions(
+    ModelName,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return lookoutequipment(
+        "ListModelVersions",
+        Dict{String,Any}(
+            mergewith(_merge, Dict{String,Any}("ModelName" => ModelName), params)
         );
         aws_config=aws_config,
         feature_set=SERVICE_FEATURE_SET,
@@ -1161,6 +1445,65 @@ function list_tags_for_resource(
         "ListTagsForResource",
         Dict{String,Any}(
             mergewith(_merge, Dict{String,Any}("ResourceArn" => ResourceArn), params)
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
+    put_resource_policy(client_token, resource_arn, resource_policy)
+    put_resource_policy(client_token, resource_arn, resource_policy, params::Dict{String,<:Any})
+
+Creates a resource control policy for a given resource.
+
+# Arguments
+- `client_token`: A unique identifier for the request. If you do not set the client request
+  token, Amazon Lookout for Equipment generates one.
+- `resource_arn`: The Amazon Resource Name (ARN) of the resource for which the policy is
+  being created.
+- `resource_policy`: The JSON-formatted resource policy to create.
+
+# Optional Parameters
+Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"PolicyRevisionId"`: A unique identifier for a revision of the resource policy.
+"""
+function put_resource_policy(
+    ClientToken,
+    ResourceArn,
+    ResourcePolicy;
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return lookoutequipment(
+        "PutResourcePolicy",
+        Dict{String,Any}(
+            "ClientToken" => ClientToken,
+            "ResourceArn" => ResourceArn,
+            "ResourcePolicy" => ResourcePolicy,
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function put_resource_policy(
+    ClientToken,
+    ResourceArn,
+    ResourcePolicy,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return lookoutequipment(
+        "PutResourcePolicy",
+        Dict{String,Any}(
+            mergewith(
+                _merge,
+                Dict{String,Any}(
+                    "ClientToken" => ClientToken,
+                    "ResourceArn" => ResourceArn,
+                    "ResourcePolicy" => ResourcePolicy,
+                ),
+                params,
+            ),
         );
         aws_config=aws_config,
         feature_set=SERVICE_FEATURE_SET,
@@ -1386,6 +1729,49 @@ function untag_resource(
             mergewith(
                 _merge,
                 Dict{String,Any}("ResourceArn" => ResourceArn, "TagKeys" => TagKeys),
+                params,
+            ),
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
+    update_active_model_version(model_name, model_version)
+    update_active_model_version(model_name, model_version, params::Dict{String,<:Any})
+
+Sets the active model version for a given machine learning model.
+
+# Arguments
+- `model_name`: The name of the machine learning model for which the active model version
+  is being set.
+- `model_version`: The version of the machine learning model for which the active model
+  version is being set.
+
+"""
+function update_active_model_version(
+    ModelName, ModelVersion; aws_config::AbstractAWSConfig=global_aws_config()
+)
+    return lookoutequipment(
+        "UpdateActiveModelVersion",
+        Dict{String,Any}("ModelName" => ModelName, "ModelVersion" => ModelVersion);
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function update_active_model_version(
+    ModelName,
+    ModelVersion,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return lookoutequipment(
+        "UpdateActiveModelVersion",
+        Dict{String,Any}(
+            mergewith(
+                _merge,
+                Dict{String,Any}("ModelName" => ModelName, "ModelVersion" => ModelVersion),
                 params,
             ),
         );

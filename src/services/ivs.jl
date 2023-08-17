@@ -67,6 +67,44 @@ function batch_get_stream_key(
 end
 
 """
+    batch_start_viewer_session_revocation(viewer_sessions)
+    batch_start_viewer_session_revocation(viewer_sessions, params::Dict{String,<:Any})
+
+Performs StartViewerSessionRevocation on multiple channel ARN and viewer ID pairs
+simultaneously.
+
+# Arguments
+- `viewer_sessions`: Array of viewer sessions, one per channel-ARN and viewer-ID pair.
+
+"""
+function batch_start_viewer_session_revocation(
+    viewerSessions; aws_config::AbstractAWSConfig=global_aws_config()
+)
+    return ivs(
+        "POST",
+        "/BatchStartViewerSessionRevocation",
+        Dict{String,Any}("viewerSessions" => viewerSessions);
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function batch_start_viewer_session_revocation(
+    viewerSessions,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return ivs(
+        "POST",
+        "/BatchStartViewerSessionRevocation",
+        Dict{String,Any}(
+            mergewith(_merge, Dict{String,Any}("viewerSessions" => viewerSessions), params)
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
     create_channel()
     create_channel(params::Dict{String,<:Any})
 
@@ -164,6 +202,8 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
 - `"recordingReconnectWindowSeconds"`: If a broadcast disconnects and then reconnects
   within the specified interval, the multiple streams will be considered a single broadcast
   and merged together. Default: 0.
+- `"renditionConfiguration"`: Object that describes which renditions should be recorded for
+  a stream.
 - `"tags"`: Array of 1-50 maps, each of the form string:string (key:value). See Tagging
   Amazon Web Services Resources for more information, including restrictions that apply to
   tags and \"Tag naming limits and requirements\"; Amazon IVS has no service-specific
@@ -924,6 +964,58 @@ function put_metadata(
             mergewith(
                 _merge,
                 Dict{String,Any}("channelArn" => channelArn, "metadata" => metadata),
+                params,
+            ),
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
+    start_viewer_session_revocation(channel_arn, viewer_id)
+    start_viewer_session_revocation(channel_arn, viewer_id, params::Dict{String,<:Any})
+
+Starts the process of revoking the viewer session associated with a specified channel ARN
+and viewer ID. Optionally, you can provide a version to revoke viewer sessions less than
+and including that version. For instructions on associating a viewer ID with a viewer
+session, see Setting Up Private Channels.
+
+# Arguments
+- `channel_arn`: The ARN of the channel associated with the viewer session to revoke.
+- `viewer_id`: The ID of the viewer associated with the viewer session to revoke. Do not
+  use this field for personally identifying, confidential, or sensitive information.
+
+# Optional Parameters
+Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"viewerSessionVersionsLessThanOrEqualTo"`: An optional filter on which versions of the
+  viewer session to revoke. All versions less than or equal to the specified version will be
+  revoked. Default: 0.
+"""
+function start_viewer_session_revocation(
+    channelArn, viewerId; aws_config::AbstractAWSConfig=global_aws_config()
+)
+    return ivs(
+        "POST",
+        "/StartViewerSessionRevocation",
+        Dict{String,Any}("channelArn" => channelArn, "viewerId" => viewerId);
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function start_viewer_session_revocation(
+    channelArn,
+    viewerId,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return ivs(
+        "POST",
+        "/StartViewerSessionRevocation",
+        Dict{String,Any}(
+            mergewith(
+                _merge,
+                Dict{String,Any}("channelArn" => channelArn, "viewerId" => viewerId),
                 params,
             ),
         );

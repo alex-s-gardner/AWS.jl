@@ -78,8 +78,8 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
 - `"configuration"`: The configuration string for the workspace that you create. For more
   information about the format and configuration options available, see Working in your
   Grafana workspace.
-- `"grafanaVersion"`: Specifies the version of Grafana to support in the new workspace.
-  Supported values are 8.4 and 9.4.
+- `"grafanaVersion"`: Specifies the version of Grafana to support in the new workspace. To
+  get a list of supported version, use the ListVersions operation.
 - `"networkAccessControl"`: Configuration for network access to your workspace. When this
   is configured, only listed IP addresses and VPC endpoints will be able to access your
   workspace. Standard Grafana authentication and authorization will still be required. If
@@ -92,7 +92,8 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   to be used for this workspace.
 - `"tags"`: The list of tags associated with the workspace.
 - `"vpcConfiguration"`: The configuration settings for an Amazon VPC that contains data
-  sources for your Grafana workspace to connect to.
+  sources for your Grafana workspace to connect to.  Connecting to a private VPC is not yet
+  available in the Asia Pacific (Seoul) Region (ap-northeast-2).
 - `"workspaceDataSources"`: This parameter is for internal use only, and should not be used.
 - `"workspaceDescription"`: A description for the workspace. This is used only to help you
   identify this workspace. Pattern: ^[p{L}p{Z}p{N}p{P}]{0,2048}
@@ -505,6 +506,34 @@ function list_tags_for_resource(
 end
 
 """
+    list_versions()
+    list_versions(params::Dict{String,<:Any})
+
+Lists available versions of Grafana. These are available when calling CreateWorkspace.
+Optionally, include a workspace to list the versions to which it can be upgraded.
+
+# Optional Parameters
+Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"maxResults"`: The maximum number of results to include in the response.
+- `"nextToken"`: The token to use when requesting the next set of results. You receive this
+  token from a previous ListVersions operation.
+- `"workspace-id"`: The ID of the workspace to list the available upgrade versions. If not
+  included, lists all versions of Grafana that are supported for CreateWorkspace.
+"""
+function list_versions(; aws_config::AbstractAWSConfig=global_aws_config())
+    return grafana(
+        "GET", "/versions"; aws_config=aws_config, feature_set=SERVICE_FEATURE_SET
+    )
+end
+function list_versions(
+    params::AbstractDict{String}; aws_config::AbstractAWSConfig=global_aws_config()
+)
+    return grafana(
+        "GET", "/versions", params; aws_config=aws_config, feature_set=SERVICE_FEATURE_SET
+    )
+end
+
+"""
     list_workspaces()
     list_workspaces(params::Dict{String,<:Any})
 
@@ -809,6 +838,12 @@ Updates the configuration string for the given workspace
   about the format and configuration options available, see Working in your Grafana workspace.
 - `workspace_id`: The ID of the workspace to update.
 
+# Optional Parameters
+Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"grafanaVersion"`: Specifies the version of Grafana to support in the new workspace. Can
+  only be used to upgrade (for example, from 8.4 to 9.4), not downgrade (for example, from
+  9.4 to 8.4). To know what versions are available to upgrade to for a specific workspace,
+  see the ListVersions operation.
 """
 function update_workspace_configuration(
     configuration, workspaceId; aws_config::AbstractAWSConfig=global_aws_config()

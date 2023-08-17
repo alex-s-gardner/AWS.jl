@@ -194,8 +194,8 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   IP addresses of the nodes. Therefore, internal load balancers can route requests only from
   clients with access to the VPC for the load balancer. The default is an Internet-facing
   load balancer. You cannot specify a scheme for a Gateway Load Balancer.
-- `"SecurityGroups"`: [Application Load Balancers] The IDs of the security groups for the
-  load balancer.
+- `"SecurityGroups"`: [Application Load Balancers and Network Load Balancers] The IDs of
+  the security groups for the load balancer.
 - `"SubnetMappings"`: The IDs of the public subnets. You can specify only one subnet per
   Availability Zone. You must specify either subnets or subnet mappings, but not both.
   [Application Load Balancers] You must specify subnets from at least two Availability Zones.
@@ -555,7 +555,8 @@ end
     deregister_targets(target_group_arn, targets, params::Dict{String,<:Any})
 
 Deregisters the specified targets from the specified target group. After the targets are
-deregistered, they no longer receive traffic from the load balancer.
+deregistered, they no longer receive traffic from the load balancer. Note: If the specified
+target does not exist, the action returns successfully.
 
 # Arguments
 - `target_group_arn`: The Amazon Resource Name (ARN) of the target group.
@@ -1446,14 +1447,21 @@ end
     set_security_groups(load_balancer_arn, security_groups)
     set_security_groups(load_balancer_arn, security_groups, params::Dict{String,<:Any})
 
-Associates the specified security groups with the specified Application Load Balancer. The
-specified security groups override the previously associated security groups. You can't
-specify a security group for a Network Load Balancer or Gateway Load Balancer.
+Associates the specified security groups with the specified Application Load Balancer or
+Network Load Balancer. The specified security groups override the previously associated
+security groups. You can't perform this operation on a Network Load Balancer unless you
+specified a security group for the load balancer when you created it. You can't associate a
+security group with a Gateway Load Balancer.
 
 # Arguments
 - `load_balancer_arn`: The Amazon Resource Name (ARN) of the load balancer.
 - `security_groups`: The IDs of the security groups.
 
+# Optional Parameters
+Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"EnforceSecurityGroupInboundRulesOnPrivateLinkTraffic"`: Indicates whether to evaluate
+  inbound security group rules for traffic sent to a Network Load Balancer through Amazon Web
+  Services PrivateLink. The default is on.
 """
 function set_security_groups(
     LoadBalancerArn, SecurityGroups; aws_config::AbstractAWSConfig=global_aws_config()
@@ -1507,7 +1515,7 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
 - `"IpAddressType"`: [Network Load Balancers] The type of IP addresses used by the subnets
   for your load balancer. The possible values are ipv4 (for IPv4 addresses) and dualstack
   (for IPv4 and IPv6 addresses). You can’t specify dualstack for a load balancer with a UDP
-  or TCP_UDP listener. .
+  or TCP_UDP listener.
 - `"SubnetMappings"`: The IDs of the public subnets. You can specify only one subnet per
   Availability Zone. You must specify either subnets or subnet mappings. [Application Load
   Balancers] You must specify subnets from at least two Availability Zones. You cannot

@@ -415,8 +415,8 @@ function allocate_address(
 end
 
 """
-    allocate_hosts(availability_zone, quantity)
-    allocate_hosts(availability_zone, quantity, params::Dict{String,<:Any})
+    allocate_hosts(availability_zone)
+    allocate_hosts(availability_zone, params::Dict{String,<:Any})
 
 Allocates a Dedicated Host to your account. At a minimum, specify the supported instance
 type or instance family, the Availability Zone in which to allocate the host, and the
@@ -424,11 +424,16 @@ number of hosts to allocate.
 
 # Arguments
 - `availability_zone`: The Availability Zone in which to allocate the Dedicated Host.
-- `quantity`: The number of Dedicated Hosts to allocate to your account with these
-  parameters.
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"AssetId"`: The IDs of the Outpost hardware assets on which to allocate the Dedicated
+  Hosts. Targeting specific hardware assets on an Outpost can help to minimize latency
+  between your workloads. This parameter is supported only if you specify OutpostArn. If you
+  are allocating the Dedicated Hosts in a Region, omit this parameter.   If you specify this
+  parameter, you can omit Quantity. In this case, Amazon EC2 allocates a Dedicated Host on
+  each specified hardware asset.   If you specify both AssetIds and Quantity, then the value
+  for Quantity must be equal to the number of asset IDs specified.
 - `"HostMaintenance"`: Indicates whether to enable or disable host maintenance for the
   Dedicated Host. For more information, see Host maintenance in the Amazon EC2 User Guide.
 - `"HostRecovery"`: Indicates whether to enable or disable host recovery for the Dedicated
@@ -440,7 +445,8 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   type only, omit this parameter and specify InstanceType instead. You cannot specify
   InstanceFamily and InstanceType in the same request.
 - `"OutpostArn"`: The Amazon Resource Name (ARN) of the Amazon Web Services Outpost on
-  which to allocate the Dedicated Host.
+  which to allocate the Dedicated Host. If you specify OutpostArn, you can optionally specify
+  AssetIds. If you are allocating the Dedicated Host in a Region, omit this parameter.
 - `"TagSpecification"`: The tags to apply to the Dedicated Host during creation.
 - `"autoPlacement"`: Indicates whether the host accepts any untargeted instance launches
   that match its instance type configuration, or if it only accepts Host tenancy instance
@@ -453,20 +459,22 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   instance type only. If you want the Dedicated Hosts to support multiple instance types in a
   specific instance family, omit this parameter and specify InstanceFamily instead. You
   cannot specify InstanceType and InstanceFamily in the same request.
+- `"quantity"`: The number of Dedicated Hosts to allocate to your account with these
+  parameters. If you are allocating the Dedicated Hosts on an Outpost, and you specify
+  AssetIds, you can omit this parameter. In this case, Amazon EC2 allocates a Dedicated Host
+  on each specified hardware asset. If you specify both AssetIds and Quantity, then the value
+  that you specify for Quantity must be equal to the number of asset IDs specified.
 """
-function allocate_hosts(
-    availabilityZone, quantity; aws_config::AbstractAWSConfig=global_aws_config()
-)
+function allocate_hosts(availabilityZone; aws_config::AbstractAWSConfig=global_aws_config())
     return ec2(
         "AllocateHosts",
-        Dict{String,Any}("availabilityZone" => availabilityZone, "quantity" => quantity);
+        Dict{String,Any}("availabilityZone" => availabilityZone);
         aws_config=aws_config,
         feature_set=SERVICE_FEATURE_SET,
     )
 end
 function allocate_hosts(
     availabilityZone,
-    quantity,
     params::AbstractDict{String};
     aws_config::AbstractAWSConfig=global_aws_config(),
 )
@@ -474,11 +482,7 @@ function allocate_hosts(
         "AllocateHosts",
         Dict{String,Any}(
             mergewith(
-                _merge,
-                Dict{String,Any}(
-                    "availabilityZone" => availabilityZone, "quantity" => quantity
-                ),
-                params,
+                _merge, Dict{String,Any}("availabilityZone" => availabilityZone), params
             ),
         );
         aws_config=aws_config,
@@ -752,10 +756,10 @@ end
     assign_private_nat_gateway_address(nat_gateway_id, params::Dict{String,<:Any})
 
 Assigns one or more private IPv4 addresses to a private NAT gateway. For more information,
-see Work with NAT gateways in the Amazon Virtual Private Cloud User Guide.
+see Work with NAT gateways in the Amazon VPC User Guide.
 
 # Arguments
-- `nat_gateway_id`: The NAT gateway ID.
+- `nat_gateway_id`: The ID of the NAT gateway.
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
@@ -913,7 +917,7 @@ any existing instances and all new instances that you launch in that VPC use the
 You don't need to restart or relaunch the instances. They automatically pick up the changes
 within a few hours, depending on how frequently the instance renews its DHCP lease. You can
 explicitly renew the lease using the operating system on the instance. For more
-information, see DHCP options sets in the Amazon Virtual Private Cloud User Guide.
+information, see DHCP options sets in the Amazon VPC User Guide.
 
 # Arguments
 - `dhcp_options_id`: The ID of the DHCP options set, or default to associate no DHCP
@@ -1180,15 +1184,15 @@ end
     associate_nat_gateway_address(allocation_id, nat_gateway_id, params::Dict{String,<:Any})
 
 Associates Elastic IP addresses (EIPs) and private IPv4 addresses with a public NAT
-gateway. For more information, see Work with NAT gateways in the Amazon Virtual Private
-Cloud User Guide. By default, you can associate up to 2 Elastic IP addresses per public NAT
-gateway. You can increase the limit by requesting a quota adjustment. For more information,
-see Elastic IP address quotas in the Amazon Virtual Private Cloud User Guide.
+gateway. For more information, see Work with NAT gateways in the Amazon VPC User Guide. By
+default, you can associate up to 2 Elastic IP addresses per public NAT gateway. You can
+increase the limit by requesting a quota adjustment. For more information, see Elastic IP
+address quotas in the Amazon VPC User Guide.
 
 # Arguments
 - `allocation_id`: The allocation IDs of EIPs that you want to associate with your NAT
   gateway.
-- `nat_gateway_id`: The NAT gateway ID.
+- `nat_gateway_id`: The ID of the NAT gateway.
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
@@ -1239,7 +1243,7 @@ to your VPC with a route table in your VPC. This association causes traffic from
 or gateway to be routed according to the routes in the route table. The action returns an
 association ID, which you need in order to disassociate the route table later. A route
 table can be associated with multiple subnets. For more information, see Route tables in
-the Amazon Virtual Private Cloud User Guide.
+the Amazon VPC User Guide.
 
 # Arguments
 - `route_table_id`: The ID of the route table.
@@ -1567,8 +1571,8 @@ Amazon-provided IPv6 CIDR block, or an IPv6 CIDR block from an IPv6 address pool
 provisioned through bring your own IP addresses (BYOIP). The IPv6 CIDR block size is fixed
 at /56. You must specify one of the following in the request: an IPv4 CIDR block, an IPv6
 pool, or an Amazon-provided IPv6 CIDR block. For more information about associating CIDR
-blocks with your VPC and applicable restrictions, see VPC and subnet sizing in the Amazon
-Virtual Private Cloud User Guide.
+blocks with your VPC and applicable restrictions, see IP addressing for your VPCs and
+subnets in the Amazon VPC User Guide.
 
 # Arguments
 - `vpc_id`: The ID of the VPC.
@@ -1623,22 +1627,20 @@ end
     attach_classic_link_vpc(security_group_id, instance_id, vpc_id)
     attach_classic_link_vpc(security_group_id, instance_id, vpc_id, params::Dict{String,<:Any})
 
- We are retiring EC2-Classic. We recommend that you migrate from EC2-Classic to a VPC. For
-more information, see Migrate from EC2-Classic to a VPC in the Amazon Elastic Compute Cloud
-User Guide.  Links an EC2-Classic instance to a ClassicLink-enabled VPC through one or more
-of the VPC's security groups. You cannot link an EC2-Classic instance to more than one VPC
-at a time. You can only link an instance that's in the running state. An instance is
-automatically unlinked from a VPC when it's stopped - you can link it to the VPC again when
-you restart it. After you've linked an instance, you cannot change the VPC security groups
-that are associated with it. To change the security groups, you must first unlink the
-instance, and then link it again. Linking your instance to a VPC is sometimes referred to
-as attaching your instance.
+ This action is deprecated.  Links an EC2-Classic instance to a ClassicLink-enabled VPC
+through one or more of the VPC security groups. You cannot link an EC2-Classic instance to
+more than one VPC at a time. You can only link an instance that's in the running state. An
+instance is automatically unlinked from a VPC when it's stopped - you can link it to the
+VPC again when you restart it. After you've linked an instance, you cannot change the VPC
+security groups that are associated with it. To change the security groups, you must first
+unlink the instance, and then link it again. Linking your instance to a VPC is sometimes
+referred to as attaching your instance.
 
 # Arguments
-- `security_group_id`: The ID of one or more of the VPC's security groups. You cannot
-  specify security groups from a different VPC.
-- `instance_id`: The ID of an EC2-Classic instance to link to the ClassicLink-enabled VPC.
-- `vpc_id`: The ID of a ClassicLink-enabled VPC.
+- `security_group_id`: The IDs of the security groups. You cannot specify security groups
+  from a different VPC.
+- `instance_id`: The ID of the EC2-Classic instance.
+- `vpc_id`: The ID of the ClassicLink-enabled VPC.
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
@@ -1690,8 +1692,8 @@ end
     attach_internet_gateway(internet_gateway_id, vpc_id, params::Dict{String,<:Any})
 
 Attaches an internet gateway or a virtual private gateway to a VPC, enabling connectivity
-between the internet and the VPC. For more information about your VPC and internet gateway,
-see the Amazon Virtual Private Cloud User Guide.
+between the internet and the VPC. For more information, see Internet gateways in the Amazon
+VPC User Guide.
 
 # Arguments
 - `internet_gateway_id`: The ID of the internet gateway.
@@ -2043,16 +2045,16 @@ end
     authorize_security_group_egress(group_id)
     authorize_security_group_egress(group_id, params::Dict{String,<:Any})
 
-[VPC only] Adds the specified outbound (egress) rules to a security group for use with a
-VPC. An outbound rule permits instances to send traffic to the specified IPv4 or IPv6 CIDR
-address ranges, or to the instances that are associated with the specified source security
-groups. When specifying an outbound rule for your security group in a VPC, the
-IpPermissions must include a destination for the traffic. You specify a protocol for each
-rule (for example, TCP). For the TCP and UDP protocols, you must also specify the
-destination port or port range. For the ICMP protocol, you must also specify the ICMP type
-and code. You can use -1 for the type or code to mean all types or all codes. Rule changes
-are propagated to affected instances as quickly as possible. However, a small delay might
-occur. For information about VPC security group quotas, see Amazon VPC quotas.
+Adds the specified outbound (egress) rules to a security group for use with a VPC. An
+outbound rule permits instances to send traffic to the specified IPv4 or IPv6 CIDR address
+ranges, or to the instances that are associated with the specified source security groups.
+When specifying an outbound rule for your security group in a VPC, the IpPermissions must
+include a destination for the traffic. You specify a protocol for each rule (for example,
+TCP). For the TCP and UDP protocols, you must also specify the destination port or port
+range. For the ICMP protocol, you must also specify the ICMP type and code. You can use -1
+for the type or code to mean all types or all codes. Rule changes are propagated to
+affected instances as quickly as possible. However, a small delay might occur. For
+information about VPC security group quotas, see Amazon VPC quotas.
 
 # Arguments
 - `group_id`: The ID of the security group.
@@ -2109,9 +2111,7 @@ and UDP, you must also specify the destination port or port range. For ICMP/ICMP
 must also specify the ICMP/ICMPv6 type and code. You can use -1 to mean all types or all
 codes. Rule changes are propagated to instances within the security group as quickly as
 possible. However, a small delay might occur. For more information about VPC security group
-quotas, see Amazon VPC quotas.  We are retiring EC2-Classic. We recommend that you migrate
-from EC2-Classic to a VPC. For more information, see Migrate from EC2-Classic to a VPC in
-the Amazon Elastic Compute Cloud User Guide.
+quotas, see Amazon VPC quotas.
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
@@ -2126,22 +2126,22 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
 - `"GroupId"`: The ID of the security group. You must specify either the security group ID
   or the security group name in the request. For security groups in a nondefault VPC, you
   must specify the security group ID.
-- `"GroupName"`: [EC2-Classic, default VPC] The name of the security group. You must
-  specify either the security group ID or the security group name in the request. For
-  security groups in a nondefault VPC, you must specify the security group ID.
+- `"GroupName"`: [Default VPC] The name of the security group. You must specify either the
+  security group ID or the security group name in the request. For security groups in a
+  nondefault VPC, you must specify the security group ID.
 - `"IpPermissions"`: The sets of IP permissions.
 - `"IpProtocol"`: The IP protocol name (tcp, udp, icmp) or number (see Protocol Numbers).
-  To specify icmpv6, use a set of IP permissions. [VPC only] Use -1 to specify all protocols.
-  If you specify -1 or a protocol other than tcp, udp, or icmp, traffic on all ports is
-  allowed, regardless of any ports you specify. Alternatively, use a set of IP permissions to
-  specify multiple rules and a description for the rule.
-- `"SourceSecurityGroupName"`: [EC2-Classic, default VPC] The name of the source security
-  group. You can't specify this parameter in combination with the following parameters: the
-  CIDR IP address range, the start of the port range, the IP protocol, and the end of the
-  port range. Creates rules that grant full ICMP, UDP, and TCP access. To create a rule with
-  a specific IP protocol and port range, use a set of IP permissions instead. For EC2-VPC,
-  the source security group must be in the same VPC.
-- `"SourceSecurityGroupOwnerId"`: [nondefault VPC] The Amazon Web Services account ID for
+  To specify icmpv6, use a set of IP permissions. Use -1 to specify all protocols. If you
+  specify -1 or a protocol other than tcp, udp, or icmp, traffic on all ports is allowed,
+  regardless of any ports you specify. Alternatively, use a set of IP permissions to specify
+  multiple rules and a description for the rule.
+- `"SourceSecurityGroupName"`: [Default VPC] The name of the source security group. You
+  can't specify this parameter in combination with the following parameters: the CIDR IP
+  address range, the start of the port range, the IP protocol, and the end of the port range.
+  Creates rules that grant full ICMP, UDP, and TCP access. To create a rule with a specific
+  IP protocol and port range, use a set of IP permissions instead. The source security group
+  must be in the same VPC.
+- `"SourceSecurityGroupOwnerId"`: [Nondefault VPC] The Amazon Web Services account ID for
   the source security group, if the source security group is in a different account. You
   can't specify this parameter in combination with the following parameters: the CIDR IP
   address range, the IP protocol, the start of the port range, and the end of the port range.
@@ -3539,7 +3539,7 @@ end
 
 Creates a default subnet with a size /20 IPv4 CIDR block in the specified Availability Zone
 in your default VPC. You can have only one default subnet per Availability Zone. For more
-information, see Creating a default subnet in the Amazon Virtual Private Cloud User Guide.
+information, see Create a default subnet in the Amazon VPC User Guide.
 
 # Arguments
 - `availability_zone`: The Availability Zone in which to create the default subnet.
@@ -3586,15 +3586,9 @@ end
 
 Creates a default VPC with a size /16 IPv4 CIDR block and a default subnet in each
 Availability Zone. For more information about the components of a default VPC, see Default
-VPC and default subnets in the Amazon Virtual Private Cloud User Guide. You cannot specify
-the components of the default VPC yourself. If you deleted your previous default VPC, you
-can create a default VPC. You cannot have more than one default VPC per Region. If your
-account supports EC2-Classic, you cannot use this action to create a default VPC in a
-Region that supports EC2-Classic. If you want a default VPC in a Region that supports
-EC2-Classic, see \"I really want a default VPC for my existing EC2 account. Is that
-possible?\" in the Default VPCs FAQ.  We are retiring EC2-Classic. We recommend that you
-migrate from EC2-Classic to a VPC. For more information, see Migrate from EC2-Classic to a
-VPC in the Amazon Elastic Compute Cloud User Guide.
+VPCs in the Amazon VPC User Guide. You cannot specify the components of the default VPC
+yourself. If you deleted your previous default VPC, you can create a default VPC. You
+cannot have more than one default VPC per Region.
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
@@ -3641,7 +3635,7 @@ node types, see RFC 2132.   Your VPC automatically starts out with a set of DHCP
 that includes only a DNS server that we provide (AmazonProvidedDNS). If you create a set of
 options, and if your VPC has an internet gateway, make sure to set the domain-name-servers
 option either to AmazonProvidedDNS or to a domain name server of your choice. For more
-information, see DHCP options sets in the Amazon Virtual Private Cloud User Guide.
+information, see DHCP options sets in the Amazon VPC User Guide.
 
 # Arguments
 - `dhcp_configuration`: A DHCP configuration option.
@@ -3726,9 +3720,11 @@ end
     create_fleet(target_capacity_specification, item)
     create_fleet(target_capacity_specification, item, params::Dict{String,<:Any})
 
-Launches an EC2 Fleet. You can create a single EC2 Fleet that includes multiple launch
-specifications that vary by instance type, AMI, Availability Zone, or subnet. For more
-information, see EC2 Fleet in the Amazon EC2 User Guide.
+Creates an EC2 Fleet that contains the configuration information for On-Demand Instances
+and Spot Instances. Instances are launched immediately if there is available capacity. A
+single EC2 Fleet can include multiple launch specifications that vary by instance type,
+AMI, Availability Zone, or subnet. For more information, see EC2 Fleet in the Amazon EC2
+User Guide.
 
 # Arguments
 - `target_capacity_specification`: The number of units to request.
@@ -3858,8 +3854,7 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   default format. If you specify this parameter, you must include at least one field. For
   more information about the available fields, see Flow log records in the Amazon VPC User
   Guide or Transit Gateway Flow Log records in the Amazon Web Services Transit Gateway Guide.
-  Specify the fields using the {field-id} format, separated by spaces. For the CLI, surround
-  this parameter value with single quotes on Linux or double quotes on Windows.
+  Specify the fields using the {field-id} format, separated by spaces.
 - `"LogGroupName"`: The name of a new or existing CloudWatch Logs log group where Amazon
   EC2 publishes your flow logs. This parameter is valid only if the destination type is
   cloud-watch-logs.
@@ -3966,18 +3961,11 @@ end
     create_image(instance_id, name, params::Dict{String,<:Any})
 
 Creates an Amazon EBS-backed AMI from an Amazon EBS-backed instance that is either running
-or stopped. By default, when Amazon EC2 creates the new AMI, it reboots the instance so
-that it can take snapshots of the attached volumes while data is at rest, in order to
-ensure a consistent state. You can set the NoReboot parameter to true in the API request,
-or use the --no-reboot option in the CLI to prevent Amazon EC2 from shutting down and
-rebooting the instance.  If you choose to bypass the shutdown and reboot process by setting
-the NoReboot parameter to true in the API request, or by using the --no-reboot option in
-the CLI, we can't guarantee the file system integrity of the created image.  If you
-customized your instance with instance store volumes or Amazon EBS volumes in addition to
-the root device volume, the new AMI contains block device mapping information for those
-volumes. When you launch an instance from this new AMI, the instance automatically launches
-with those additional volumes. For more information, see Create an Amazon EBS-backed Linux
-AMI in the Amazon Elastic Compute Cloud User Guide.
+or stopped. If you customized your instance with instance store volumes or Amazon EBS
+volumes in addition to the root device volume, the new AMI contains block device mapping
+information for those volumes. When you launch an instance from this new AMI, the instance
+automatically launches with those additional volumes. For more information, see Create an
+Amazon EBS-backed Linux AMI in the Amazon Elastic Compute Cloud User Guide.
 
 # Arguments
 - `instance_id`: The ID of the instance.
@@ -4001,14 +3989,14 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
 - `"dryRun"`: Checks whether you have the required permissions for the action, without
   actually making the request, and provides an error response. If you have the required
   permissions, the error response is DryRunOperation. Otherwise, it is UnauthorizedOperation.
-- `"noReboot"`: By default, when Amazon EC2 creates the new AMI, it reboots the instance so
-  that it can take snapshots of the attached volumes while data is at rest, in order to
-  ensure a consistent state. You can set the NoReboot parameter to true in the API request,
-  or use the --no-reboot option in the CLI to prevent Amazon EC2 from shutting down and
-  rebooting the instance.  If you choose to bypass the shutdown and reboot process by setting
-  the NoReboot parameter to true in the API request, or by using the --no-reboot option in
-  the CLI, we can't guarantee the file system integrity of the created image.  Default: false
-  (follow standard reboot process)
+- `"noReboot"`: Indicates whether or not the instance should be automatically rebooted
+  before creating the image. Specify one of the following values:    true - The instance is
+  not rebooted before creating the image. This creates crash-consistent snapshots that
+  include only the data that has been written to the volumes at the time the snapshots are
+  created. Buffered data and data in memory that has not yet been written to the volumes is
+  not included in the snapshots.    false - The instance is rebooted before creating the
+  image. This ensures that all buffered data and data in memory is written to the volumes
+  before the snapshots are created.   Default: false
 """
 function create_image(instanceId, name; aws_config::AbstractAWSConfig=global_aws_config())
     return ec2(
@@ -4041,8 +4029,8 @@ end
     create_instance_connect_endpoint(subnet_id, params::Dict{String,<:Any})
 
 Creates an EC2 Instance Connect Endpoint. An EC2 Instance Connect Endpoint allows you to
-connect to a resource, without requiring the resource to have a public IPv4 address. For
-more information, see Connect to your resources without requiring a public IPv4 address
+connect to an instance, without requiring the instance to have a public IPv4 address. For
+more information, see Connect to your instances without requiring a public IPv4 address
 using EC2 Instance Connect Endpoint in the Amazon EC2 User Guide.
 
 # Arguments
@@ -4150,9 +4138,9 @@ end
     create_instance_export_task(export_to_s3, instance_id, target_environment, params::Dict{String,<:Any})
 
 Exports a running or stopped instance to an Amazon S3 bucket. For information about the
-supported operating systems, image formats, and known limitations for the types of
-instances you can export, see Exporting an instance as a VM Using VM Import/Export in the
-VM Import/Export User Guide.
+prerequisites for your Amazon S3 bucket, supported operating systems, image formats, and
+known limitations for the types of instances you can export, see Exporting an instance as a
+VM Using VM Import/Export in the VM Import/Export User Guide.
 
 # Arguments
 - `export_to_s3`: The format and location for an export instance task.
@@ -4212,8 +4200,8 @@ end
     create_internet_gateway(params::Dict{String,<:Any})
 
 Creates an internet gateway for use with a VPC. After creating the internet gateway, you
-attach it to a VPC using AttachInternetGateway. For more information about your VPC and
-internet gateway, see the Amazon Virtual Private Cloud User Guide.
+attach it to a VPC using AttachInternetGateway. For more information, see Internet gateways
+in the Amazon VPC User Guide.
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
@@ -4954,7 +4942,7 @@ private communication is routed across VPCs and on-premises networks through a t
 gateway or virtual private gateway. Common use cases include running large workloads behind
 a small pool of allowlisted IPv4 addresses, preserving private IPv4 addresses, and
 communicating between overlapping networks. For more information, see NAT gateways in the
-Amazon Virtual Private Cloud User Guide.
+Amazon VPC User Guide.
 
 # Arguments
 - `subnet_id`: The ID of the subnet in which to create the NAT gateway.
@@ -4975,16 +4963,13 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   permissions, the error response is DryRunOperation. Otherwise, it is UnauthorizedOperation.
 - `"PrivateIpAddress"`: The private IPv4 address to assign to the NAT gateway. If you don't
   provide an address, a private IPv4 address will be automatically assigned.
-- `"SecondaryAllocationId"`: Secondary EIP allocation IDs. For more information about
-  secondary addresses, see Create a NAT gateway in the Amazon Virtual Private Cloud User
-  Guide.
+- `"SecondaryAllocationId"`: Secondary EIP allocation IDs. For more information, see Create
+  a NAT gateway in the Amazon VPC User Guide.
 - `"SecondaryPrivateIpAddress"`: Secondary private IPv4 addresses. For more information
-  about secondary addresses, see Create a NAT gateway in the Amazon Virtual Private Cloud
-  User Guide.
+  about secondary addresses, see Create a NAT gateway in the Amazon VPC User Guide.
 - `"SecondaryPrivateIpAddressCount"`: [Private NAT gateway only] The number of secondary
   private IPv4 addresses you want to assign to the NAT gateway. For more information about
-  secondary addresses, see Create a NAT gateway in the Amazon Virtual Private Cloud User
-  Guide.
+  secondary addresses, see Create a NAT gateway in the Amazon VPC User Guide.
 - `"TagSpecification"`: The tags to assign to the NAT gateway.
 """
 function create_nat_gateway(SubnetId; aws_config::AbstractAWSConfig=global_aws_config())
@@ -5020,7 +5005,7 @@ end
 
 Creates a network ACL in a VPC. Network ACLs provide an optional layer of security (in
 addition to security groups) for the instances in your VPC. For more information, see
-Network ACLs in the Amazon Virtual Private Cloud User Guide.
+Network ACLs in the Amazon VPC User Guide.
 
 # Arguments
 - `vpc_id`: The ID of the VPC.
@@ -5065,7 +5050,7 @@ and not number them one right after the other (for example, 101, 102, 103, ...).
 it easier to add a rule between existing ones without having to renumber the rules. After
 you add an entry, you can't modify it; you must either replace it, or create an entry and
 delete the old one. For more information about network ACLs, see Network ACLs in the Amazon
-Virtual Private Cloud User Guide.
+VPC User Guide.
 
 # Arguments
 - `egress`: Indicates whether this is an egress rule (rule is applied to traffic leaving
@@ -5279,6 +5264,18 @@ Elastic Compute Cloud User Guide.
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
 - `"ClientToken"`: Unique, case-sensitive identifier that you provide to ensure the
   idempotency of the request. For more information, see Ensuring Idempotency.
+- `"EnablePrimaryIpv6"`: If you’re creating a network interface in a dual-stack or
+  IPv6-only subnet, you have the option to assign a primary IPv6 IP address. A primary IPv6
+  address is an IPv6 GUA address associated with an ENI that you have enabled to use a
+  primary IPv6 address. Use this option if the instance that this ENI will be attached to
+  relies on its IPv6 address not changing. Amazon Web Services will automatically assign an
+  IPv6 address associated with the ENI attached to your instance to be the primary IPv6
+  address. Once you enable an IPv6 GUA address to be a primary IPv6, you cannot disable it.
+  When you enable an IPv6 GUA address to be a primary IPv6, the first IPv6 GUA will be made
+  the primary IPv6 address until the instance is terminated or the network interface is
+  detached. If you have multiple IPv6 addresses associated with an ENI attached to your
+  instance and you enable a primary IPv6 address, the first IPv6 GUA address associated with
+  the ENI becomes the primary IPv6 address.
 - `"InterfaceType"`: The type of network interface. The default is interface. The only
   supported values are interface, efa, and trunk.
 - `"Ipv4Prefix"`: The IPv4 prefixes assigned to the network interface. You can't specify
@@ -5700,8 +5697,8 @@ route table includes the following two IPv4 routes:    192.0.2.0/24 (goes to som
    192.0.2.0/28 (goes to some target B)   Both routes apply to the traffic destined for
 192.0.2.3. However, the second route in the list covers a smaller number of IP addresses
 and is therefore more specific, so we use that route to determine where to target the
-traffic. For more information about route tables, see Route tables in the Amazon Virtual
-Private Cloud User Guide.
+traffic. For more information about route tables, see Route tables in the Amazon VPC User
+Guide.
 
 # Arguments
 - `route_table_id`: The ID of the route table for the route.
@@ -5764,7 +5761,7 @@ end
 
 Creates a route table for the specified VPC. After you create a route table, you can add
 routes and associate the table with a subnet. For more information, see Route tables in the
-Amazon Virtual Private Cloud User Guide.
+Amazon VPC User Guide.
 
 # Arguments
 - `vpc_id`: The ID of the VPC.
@@ -5803,32 +5800,26 @@ Creates a security group. A security group acts as a virtual firewall for your i
 control inbound and outbound traffic. For more information, see Amazon EC2 security groups
 in the Amazon Elastic Compute Cloud User Guide and Security groups for your VPC in the
 Amazon Virtual Private Cloud User Guide. When you create a security group, you specify a
-friendly name of your choice. You can have a security group for use in EC2-Classic with the
-same name as a security group for use in a VPC. However, you can't have two security groups
-for use in EC2-Classic with the same name or two security groups for use in a VPC with the
-same name. You have a default security group for use in EC2-Classic and a default security
-group for use in your VPC. If you don't specify a security group when you launch an
-instance, the instance is launched into the appropriate default security group. A default
-security group includes a default rule that grants instances unrestricted network access to
-each other. You can add or remove rules from your security groups using
-AuthorizeSecurityGroupIngress, AuthorizeSecurityGroupEgress, RevokeSecurityGroupIngress,
-and RevokeSecurityGroupEgress. For more information about VPC security group limits, see
-Amazon VPC Limits.  We are retiring EC2-Classic. We recommend that you migrate from
-EC2-Classic to a VPC. For more information, see Migrate from EC2-Classic to a VPC in the
-Amazon Elastic Compute Cloud User Guide.
+friendly name of your choice. You can't have two security groups for the same VPC with the
+same name. You have a default security group for use in your VPC. If you don't specify a
+security group when you launch an instance, the instance is launched into the appropriate
+default security group. A default security group includes a default rule that grants
+instances unrestricted network access to each other. You can add or remove rules from your
+security groups using AuthorizeSecurityGroupIngress, AuthorizeSecurityGroupEgress,
+RevokeSecurityGroupIngress, and RevokeSecurityGroupEgress. For more information about VPC
+security group limits, see Amazon VPC Limits.
 
 # Arguments
 - `group_description`: A description for the security group. Constraints: Up to 255
-  characters in length Constraints for EC2-Classic: ASCII characters Constraints for EC2-VPC:
-  a-z, A-Z, 0-9, spaces, and ._-:/()#,@[]+=&amp;;{}!*
+  characters in length Valid characters: a-z, A-Z, 0-9, spaces, and ._-:/()#,@[]+=&amp;;{}!*
 - `group_name`: The name of the security group. Constraints: Up to 255 characters in
-  length. Cannot start with sg-. Constraints for EC2-Classic: ASCII characters Constraints
-  for EC2-VPC: a-z, A-Z, 0-9, spaces, and ._-:/()#,@[]+=&amp;;{}!*
+  length. Cannot start with sg-. Valid characters: a-z, A-Z, 0-9, spaces, and
+  ._-:/()#,@[]+=&amp;;{}!*
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
 - `"TagSpecification"`: The tags to assign to the security group.
-- `"VpcId"`: [EC2-VPC] The ID of the VPC. Required for EC2-VPC.
+- `"VpcId"`: The ID of the VPC. Required for a nondefault VPC.
 - `"dryRun"`: Checks whether you have the required permissions for the action, without
   actually making the request, and provides an error response. If you have the required
   permissions, the error response is DryRunOperation. Otherwise, it is UnauthorizedOperation.
@@ -6111,7 +6102,7 @@ an IPv6 subnet is a /64 netmask. If you add more than one subnet to a VPC, they'
 in a star topology with a logical router in the middle. When you stop an instance in a
 subnet, it retains its private IPv4 address. It's therefore possible to have a subnet with
 no running instances (they're all stopped), but no remaining IP addresses available. For
-more information, see Subnets in the Amazon Virtual Private Cloud User Guide.
+more information, see Subnets in the Amazon VPC User Guide.
 
 # Arguments
 - `vpc_id`: The ID of the VPC.
@@ -6122,9 +6113,9 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   Web Services selects one for you. If you create more than one subnet in your VPC, we do not
   necessarily select a different zone for each subnet. To create a subnet in a Local Zone,
   set this value to the Local Zone ID, for example us-west-2-lax-1a. For information about
-  the Regions that support Local Zones, see Available Regions in the Amazon Elastic Compute
-  Cloud User Guide. To create a subnet in an Outpost, set this value to the Availability Zone
-  for the Outpost and specify the Outpost ARN.
+  the Regions that support Local Zones, see Local Zones locations. To create a subnet in an
+  Outpost, set this value to the Availability Zone for the Outpost and specify the Outpost
+  ARN.
 - `"AvailabilityZoneId"`: The AZ ID or the Local Zone ID of the subnet.
 - `"CidrBlock"`: The IPv4 network range for the subnet, in CIDR notation. For example,
   10.0.0.0/24. We modify the specified CIDR block to its canonical form; for example, if you
@@ -6163,17 +6154,16 @@ end
     create_subnet_cidr_reservation(cidr, reservation_type, subnet_id)
     create_subnet_cidr_reservation(cidr, reservation_type, subnet_id, params::Dict{String,<:Any})
 
-Creates a subnet CIDR reservation. For information about subnet CIDR reservations, see
-Subnet CIDR reservations in the Amazon Virtual Private Cloud User Guide.
+Creates a subnet CIDR reservation. For more information, see Subnet CIDR reservations in
+the Amazon Virtual Private Cloud User Guide and Assign prefixes to network interfaces in
+the Amazon Elastic Compute Cloud User Guide.
 
 # Arguments
 - `cidr`: The IPv4 or IPV6 CIDR range to reserve.
-- `reservation_type`: The type of reservation. The following are valid values:    prefix:
-  The Amazon EC2 Prefix Delegation feature assigns the IP addresses to network interfaces
-  that are associated with an instance. For information about Prefix Delegation, see Prefix
-  Delegation for Amazon EC2 network interfaces in the Amazon Elastic Compute Cloud User
-  Guide.    explicit: You manually assign the IP addresses to resources that reside in your
-  subnet.
+- `reservation_type`: The type of reservation. The reservation type determines how the
+  reserved IP addresses are assigned to resources.    prefix - Amazon Web Services assigns
+  the reserved IP addresses to network interfaces.    explicit - You assign the reserved IP
+  addresses to network interfaces.
 - `subnet_id`: The ID of the subnet.
 
 # Optional Parameters
@@ -6433,7 +6423,10 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   mirror a subset of the packet, set this to the length (in bytes) that you want to mirror.
   For example, if you set this value to 100, then the first 100 bytes that meet the filter
   criteria are copied to the target. If you do not want to mirror the entire packet, use the
-  PacketLength parameter to specify the number of bytes in each packet to mirror.
+  PacketLength parameter to specify the number of bytes in each packet to mirror. For
+  sessions with Network Load Balancer (NLB) Traffic Mirror targets the default PacketLength
+  will be set to 8500. Valid values are 1-8500. Setting a PacketLength greater than 8500 will
+  result in an error response.
 - `"TagSpecification"`: The tags to assign to a Traffic Mirror session.
 - `"VirtualNetworkId"`: The VXLAN ID for the Traffic Mirror session. For more information
   about the VXLAN protocol, see RFC 7348. If you do not specify a VirtualNetworkId, an
@@ -7427,7 +7420,8 @@ Guide. For more information, see Create an Amazon EBS volume in the Amazon Elast
 Cloud User Guide.
 
 # Arguments
-- `availability_zone`: The Availability Zone in which to create the volume.
+- `availability_zone`: The ID of the Availability Zone in which to create the volume. For
+  example, us-east-1a.
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
@@ -7519,16 +7513,16 @@ end
     create_vpc()
     create_vpc(params::Dict{String,<:Any})
 
-Creates a VPC with the specified CIDR blocks. For more information, see VPC CIDR blocks in
-the Amazon Virtual Private Cloud User Guide. You can optionally request an IPv6 CIDR block
-for the VPC. You can request an Amazon-provided IPv6 CIDR block from Amazon's pool of IPv6
-addresses, or an IPv6 CIDR block from an IPv6 address pool that you provisioned through
-bring your own IP addresses (BYOIP). By default, each instance that you launch in the VPC
-has the default DHCP options, which include only a default DNS server that we provide
-(AmazonProvidedDNS). For more information, see DHCP option sets in the Amazon Virtual
-Private Cloud User Guide. You can specify the instance tenancy value for the VPC when you
-create it. You can't change this value for the VPC after you create it. For more
-information, see Dedicated Instances in the Amazon Elastic Compute Cloud User Guide.
+Creates a VPC with the specified CIDR blocks. For more information, see IP addressing for
+your VPCs and subnets in the Amazon VPC User Guide. You can optionally request an IPv6 CIDR
+block for the VPC. You can request an Amazon-provided IPv6 CIDR block from Amazon's pool of
+IPv6 addresses, or an IPv6 CIDR block from an IPv6 address pool that you provisioned
+through bring your own IP addresses (BYOIP). By default, each instance that you launch in
+the VPC has the default DHCP options, which include only a default DNS server that we
+provide (AmazonProvidedDNS). For more information, see DHCP option sets in the Amazon VPC
+User Guide. You can specify the instance tenancy value for the VPC when you create it. You
+can't change this value for the VPC after you create it. For more information, see
+Dedicated Instances in the Amazon EC2 User Guide.
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
@@ -7582,14 +7576,14 @@ end
     create_vpc_endpoint(service_name, vpc_id)
     create_vpc_endpoint(service_name, vpc_id, params::Dict{String,<:Any})
 
-Creates a VPC endpoint for a specified service. An endpoint enables you to create a private
-connection between your VPC and the service. The service may be provided by Amazon Web
-Services, an Amazon Web Services Marketplace Partner, or another Amazon Web Services
-account. For more information, see the Amazon Web Services PrivateLink Guide.
+Creates a VPC endpoint. A VPC endpoint provides a private connection between the specified
+VPC and the specified endpoint service. You can use an endpoint service provided by Amazon
+Web Services, an Amazon Web Services Marketplace Partner, or another Amazon Web Services
+account. For more information, see the Amazon Web Services PrivateLink User Guide.
 
 # Arguments
-- `service_name`: The service name.
-- `vpc_id`: The ID of the VPC for the endpoint.
+- `service_name`: The name of the endpoint service.
+- `vpc_id`: The ID of the VPC.
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
@@ -8838,14 +8832,17 @@ end
     delete_launch_template_versions(launch_template_version)
     delete_launch_template_versions(launch_template_version, params::Dict{String,<:Any})
 
-Deletes one or more versions of a launch template. You cannot delete the default version of
+Deletes one or more versions of a launch template. You can't delete the default version of
 a launch template; you must first assign a different version as the default. If the default
 version is the only version for the launch template, you must delete the entire launch
-template using DeleteLaunchTemplate.
+template using DeleteLaunchTemplate. You can delete up to 200 launch template versions in a
+single request. To delete more than 200 versions in a single request, use
+DeleteLaunchTemplate, which deletes the launch template and all of its versions. For more
+information, see Delete a launch template version in the EC2 User Guide.
 
 # Arguments
 - `launch_template_version`: The version numbers of one or more launch template versions to
-  delete.
+  delete. You can specify up to 200 launch template version numbers.
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
@@ -9740,17 +9737,15 @@ end
     delete_security_group(params::Dict{String,<:Any})
 
 Deletes a security group. If you attempt to delete a security group that is associated with
-an instance, or is referenced by another security group, the operation fails with
-InvalidGroup.InUse in EC2-Classic or DependencyViolation in EC2-VPC.  We are retiring
-EC2-Classic. We recommend that you migrate from EC2-Classic to a VPC. For more information,
-see Migrate from EC2-Classic to a VPC in the Amazon Elastic Compute Cloud User Guide.
+an instance or network interface or is referenced by another security group, the operation
+fails with DependencyViolation.
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
-- `"GroupId"`: The ID of the security group. Required for a nondefault VPC.
-- `"GroupName"`: [EC2-Classic, default VPC] The name of the security group. You can specify
-  either the security group name or the security group ID. For security groups in a
-  nondefault VPC, you must specify the security group ID.
+- `"GroupId"`: The ID of the security group.
+- `"GroupName"`: [Default VPC] The name of the security group. You can specify either the
+  security group name or the security group ID. For security groups in a nondefault VPC, you
+  must specify the security group ID.
 - `"dryRun"`: Checks whether you have the required permissions for the action, without
   actually making the request, and provides an error response. If you have the required
   permissions, the error response is DryRunOperation. Otherwise, it is UnauthorizedOperation.
@@ -11581,18 +11576,14 @@ end
     describe_account_attributes(params::Dict{String,<:Any})
 
 Describes attributes of your Amazon Web Services account. The following are the supported
-account attributes:    supported-platforms: Indicates whether your account can launch
-instances into EC2-Classic and EC2-VPC, or only into EC2-VPC.    default-vpc: The ID of the
-default VPC for your account, or none.    max-instances: This attribute is no longer
-supported. The returned value does not reflect your actual vCPU limit for running On-Demand
-Instances. For more information, see On-Demand Instance Limits in the Amazon Elastic
-Compute Cloud User Guide.    vpc-max-security-groups-per-interface: The maximum number of
-security groups that you can assign to a network interface.    max-elastic-ips: The maximum
-number of Elastic IP addresses that you can allocate for use with EC2-Classic.
-vpc-max-elastic-ips: The maximum number of Elastic IP addresses that you can allocate for
-use with EC2-VPC.    We are retiring EC2-Classic on August 15, 2022. We recommend that you
-migrate from EC2-Classic to a VPC. For more information, see Migrate from EC2-Classic to a
-VPC in the Amazon EC2 User Guide.
+account attributes:    default-vpc: The ID of the default VPC for your account, or none.
+max-instances: This attribute is no longer supported. The returned value does not reflect
+your actual vCPU limit for running On-Demand Instances. For more information, see On-Demand
+Instance Limits in the Amazon Elastic Compute Cloud User Guide.    max-elastic-ips: The
+maximum number of Elastic IP addresses that you can allocate.    supported-platforms: This
+attribute is deprecated.    vpc-max-elastic-ips: The maximum number of Elastic IP addresses
+that you can allocate.    vpc-max-security-groups-per-interface: The maximum number of
+security groups that you can assign to a network interface.
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
@@ -12103,25 +12094,21 @@ end
     describe_classic_link_instances()
     describe_classic_link_instances(params::Dict{String,<:Any})
 
-Describes one or more of your linked EC2-Classic instances. This request only returns
-information about EC2-Classic instances linked to a VPC through ClassicLink. You cannot use
-this request to return information about other instances.  We are retiring EC2-Classic. We
-recommend that you migrate from EC2-Classic to a VPC. For more information, see Migrate
-from EC2-Classic to a VPC in the Amazon Elastic Compute Cloud User Guide.
+ This action is deprecated.  Describes one or more of your linked EC2-Classic instances.
+This request only returns information about EC2-Classic instances linked to a VPC through
+ClassicLink. You cannot use this request to return information about other instances.
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
-- `"Filter"`: One or more filters.    group-id - The ID of a VPC security group that's
-  associated with the instance.    instance-id - The ID of the instance.    tag:&lt;key&gt; -
-  The key/value combination of a tag assigned to the resource. Use the tag key in the filter
-  name and the tag value as the filter value. For example, to find all resources that have a
-  tag with the key Owner and the value TeamA, specify tag:Owner for the filter name and TeamA
-  for the filter value.    tag-key - The key of a tag assigned to the resource. Use this
-  filter to find all resources assigned a tag with a specific key, regardless of the tag
-  value.    vpc-id - The ID of the VPC to which the instance is linked.  vpc-id - The ID of
-  the VPC that the instance is linked to.
-- `"InstanceId"`: One or more instance IDs. Must be instances linked to a VPC through
-  ClassicLink.
+- `"Filter"`: The filters.    group-id - The ID of a VPC security group that's associated
+  with the instance.    instance-id - The ID of the instance.    tag:&lt;key&gt; - The
+  key/value combination of a tag assigned to the resource. Use the tag key in the filter name
+  and the tag value as the filter value. For example, to find all resources that have a tag
+  with the key Owner and the value TeamA, specify tag:Owner for the filter name and TeamA for
+  the filter value.    tag-key - The key of a tag assigned to the resource. Use this filter
+  to find all resources assigned a tag with a specific key, regardless of the tag value.
+  vpc-id - The ID of the VPC to which the instance is linked.
+- `"InstanceId"`: The instance IDs. Must be instances linked to a VPC through ClassicLink.
 - `"dryRun"`: Checks whether you have the required permissions for the action, without
   actually making the request, and provides an error response. If you have the required
   permissions, the error response is DryRunOperation. Otherwise, it is UnauthorizedOperation.
@@ -12500,21 +12487,21 @@ end
     describe_dhcp_options(params::Dict{String,<:Any})
 
 Describes one or more of your DHCP options sets. For more information, see DHCP options
-sets in the Amazon Virtual Private Cloud User Guide.
+sets in the Amazon VPC User Guide.
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
 - `"DhcpOptionsId"`: The IDs of one or more DHCP options sets. Default: Describes all your
   DHCP options sets.
-- `"Filter"`: One or more filters.    dhcp-options-id - The ID of a DHCP options set.
-  key - The key for one of the options (for example, domain-name).    value - The value for
-  one of the options.    owner-id - The ID of the Amazon Web Services account that owns the
-  DHCP options set.    tag:&lt;key&gt; - The key/value combination of a tag assigned to the
-  resource. Use the tag key in the filter name and the tag value as the filter value. For
-  example, to find all resources that have a tag with the key Owner and the value TeamA,
-  specify tag:Owner for the filter name and TeamA for the filter value.    tag-key - The key
-  of a tag assigned to the resource. Use this filter to find all resources assigned a tag
-  with a specific key, regardless of the tag value.
+- `"Filter"`: The filters.    dhcp-options-id - The ID of a DHCP options set.    key - The
+  key for one of the options (for example, domain-name).    value - The value for one of the
+  options.    owner-id - The ID of the Amazon Web Services account that owns the DHCP options
+  set.    tag:&lt;key&gt; - The key/value combination of a tag assigned to the resource. Use
+  the tag key in the filter name and the tag value as the filter value. For example, to find
+  all resources that have a tag with the key Owner and the value TeamA, specify tag:Owner for
+  the filter name and TeamA for the filter value.    tag-key - The key of a tag assigned to
+  the resource. Use this filter to find all resources assigned a tag with a specific key,
+  regardless of the tag value.
 - `"MaxResults"`: The maximum number of items to return for this request. To get the next
   page of items, make another request with the token returned in the output. For more
   information, see Pagination.
@@ -12551,13 +12538,13 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
 - `"DryRun"`: Checks whether you have the required permissions for the action, without
   actually making the request, and provides an error response. If you have the required
   permissions, the error response is DryRunOperation. Otherwise, it is UnauthorizedOperation.
-- `"EgressOnlyInternetGatewayId"`: One or more egress-only internet gateway IDs.
-- `"Filter"`: One or more filters.    tag:&lt;key&gt; - The key/value combination of a tag
-  assigned to the resource. Use the tag key in the filter name and the tag value as the
-  filter value. For example, to find all resources that have a tag with the key Owner and the
-  value TeamA, specify tag:Owner for the filter name and TeamA for the filter value.
-  tag-key - The key of a tag assigned to the resource. Use this filter to find all resources
-  assigned a tag with a specific key, regardless of the tag value.
+- `"EgressOnlyInternetGatewayId"`: The IDs of the egress-only internet gateways.
+- `"Filter"`: The filters.    tag:&lt;key&gt; - The key/value combination of a tag assigned
+  to the resource. Use the tag key in the filter name and the tag value as the filter value.
+  For example, to find all resources that have a tag with the key Owner and the value TeamA,
+  specify tag:Owner for the filter name and TeamA for the filter value.    tag-key - The key
+  of a tag assigned to the resource. Use this filter to find all resources assigned a tag
+  with a specific key, regardless of the tag value.
 - `"MaxResults"`: The maximum number of items to return for this request. To get the next
   page of items, make another request with the token returned in the output. For more
   information, see Pagination.
@@ -13374,9 +13361,9 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   you specify self or your own Amazon Web Services account ID, AMIs shared with your account
   are returned. In addition, AMIs that are shared with the organization or OU of which you
   are member are also returned.    If you specify all, all public AMIs are returned.
-- `"Filter"`: The filters.    architecture - The image architecture (i386 | x86_64 |
-  arm64).    block-device-mapping.delete-on-termination - A Boolean value that indicates
-  whether the Amazon EBS volume is deleted on instance termination.
+- `"Filter"`: The filters.    architecture - The image architecture (i386 | x86_64 | arm64
+  | x86_64_mac | arm64_mac).    block-device-mapping.delete-on-termination - A Boolean value
+  that indicates whether the Amazon EBS volume is deleted on instance termination.
   block-device-mapping.device-name - The device name specified in the block device mapping
   (for example, /dev/sdh or xvdh).    block-device-mapping.snapshot-id - The ID of the
   snapshot used for the Amazon EBS volume.    block-device-mapping.volume-size - The volume
@@ -13883,11 +13870,11 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
 - `"Filter"`: One or more filters. Filter names and values are case-sensitive.
   auto-recovery-supported - Indicates whether Amazon CloudWatch action based recovery is
   supported (true | false).    bare-metal - Indicates whether it is a bare metal instance
-  type (true | false).    burstable-performance-supported - Indicates whether it is a
-  burstable performance instance type (true | false).    current-generation - Indicates
-  whether this instance type is the latest generation instance type of an instance family
-  (true | false).    ebs-info.ebs-optimized-info.baseline-bandwidth-in-mbps - The baseline
-  bandwidth performance for an EBS-optimized instance type, in Mbps.
+  type (true | false).    burstable-performance-supported - Indicates whether the instance
+  type is a burstable performance T instance type (true | false).    current-generation -
+  Indicates whether this instance type is the latest generation instance type of an instance
+  family (true | false).    ebs-info.ebs-optimized-info.baseline-bandwidth-in-mbps - The
+  baseline bandwidth performance for an EBS-optimized instance type, in Mbps.
   ebs-info.ebs-optimized-info.baseline-iops - The baseline input/output storage operations
   per second for an EBS-optimized instance type.
   ebs-info.ebs-optimized-info.baseline-throughput-in-mbps - The baseline throughput
@@ -13929,8 +13916,12 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   network-info.maximum-network-cards - The maximum number of network cards per instance.
   network-info.maximum-network-interfaces - The maximum number of network interfaces per
   instance.    network-info.network-performance - The network performance (for example, \"25
-  Gigabit\").    processor-info.supported-architecture - The CPU architecture (arm64 | i386 |
-  x86_64).    processor-info.sustained-clock-speed-in-ghz - The CPU clock speed, in GHz.
+  Gigabit\").    nitro-enclaves-support - Indicates whether Nitro Enclaves is supported
+  (supported | unsupported).    nitro-tpm-support - Indicates whether NitroTPM is supported
+  (supported | unsupported).    nitro-tpm-info.supported-versions - The supported NitroTPM
+  version (2.0).    processor-info.supported-architecture - The CPU architecture (arm64 |
+  i386 | x86_64).    processor-info.sustained-clock-speed-in-ghz - The CPU clock speed, in
+  GHz.    processor-info.supported-features - The supported CPU features (amd-sev-snp).
   supported-boot-mode - The boot mode (legacy-bios | uefi).    supported-root-device-type -
   The root device type (ebs | instance-store).    supported-usage-class - The usage class
   (on-demand | spot).    supported-virtualization-type - The virtualization type (hvm |
@@ -13988,49 +13979,69 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   Dedicated Host (default | host).    architecture - The instance architecture (i386 | x86_64
   | arm64).    availability-zone - The Availability Zone of the instance.
   block-device-mapping.attach-time - The attach time for an EBS volume mapped to the
-  instance, for example, 2010-09-15T17:15:20.000Z.
+  instance, for example, 2022-09-15T17:15:20.000Z.
   block-device-mapping.delete-on-termination - A Boolean that indicates whether the EBS
   volume is deleted on instance termination.    block-device-mapping.device-name - The device
   name specified in the block device mapping (for example, /dev/sdh or xvdh).
   block-device-mapping.status - The status for the EBS volume (attaching | attached |
   detaching | detached).    block-device-mapping.volume-id - The volume ID of the EBS volume.
-     capacity-reservation-id - The ID of the Capacity Reservation into which the instance was
-  launched.    client-token - The idempotency token you provided when you launched the
-  instance.    dns-name - The public DNS name of the instance.
+     boot-mode - The boot mode that was specified by the AMI (legacy-bios | uefi |
+  uefi-preferred).    capacity-reservation-id - The ID of the Capacity Reservation into which
+  the instance was launched.
+  capacity-reservation-specification.capacity-reservation-preference - The instance's
+  Capacity Reservation preference (open | none).
+  capacity-reservation-specification.capacity-reservation-target.capacity-reservation-id -
+  The ID of the targeted Capacity Reservation.
+  capacity-reservation-specification.capacity-reservation-target.capacity-reservation-resource
+  -group-arn - The ARN of the targeted Capacity Reservation group.    client-token - The
+  idempotency token you provided when you launched the instance.
+  current-instance-boot-mode - The boot mode that is used to launch the instance at launch or
+  start (legacy-bios | uefi).    dns-name - The public DNS name of the instance.
+  ebs-optimized - A Boolean that indicates whether the instance is optimized for Amazon EBS
+  I/O.    ena-support - A Boolean that indicates whether the instance is enabled for enhanced
+  networking with ENA.    enclave-options.enabled - A Boolean that indicates whether the
+  instance is enabled for Amazon Web Services Nitro Enclaves.
   hibernation-options.configured - A Boolean that indicates whether the instance is enabled
   for hibernation. A value of true means that the instance is enabled for hibernation.
   host-id - The ID of the Dedicated Host on which the instance is running, if applicable.
   hypervisor - The hypervisor type of the instance (ovm | xen). The value xen is used for
   both Xen and Nitro hypervisors.    iam-instance-profile.arn - The instance profile
-  associated with the instance. Specified as an ARN.    image-id - The ID of the image used
-  to launch the instance.    instance-id - The ID of the instance.    instance-lifecycle -
-  Indicates whether this is a Spot Instance or a Scheduled Instance (spot | scheduled).
-  instance-state-code - The state of the instance, as a 16-bit unsigned integer. The high
-  byte is used for internal purposes and should be ignored. The low byte is set based on the
-  state represented. The valid values are: 0 (pending), 16 (running), 32 (shutting-down), 48
-  (terminated), 64 (stopping), and 80 (stopped).    instance-state-name - The state of the
-  instance (pending | running | shutting-down | terminated | stopping | stopped).
-  instance-type - The type of instance (for example, t2.micro).    instance.group-id - The ID
-  of the security group for the instance.     instance.group-name - The name of the security
-  group for the instance.     ip-address - The public IPv4 address of the instance.
-  kernel-id - The kernel ID.    key-name - The name of the key pair used when the instance
-  was launched.    launch-index - When launching multiple instances, this is the index for
-  the instance in the launch group (for example, 0, 1, 2, and so on).     launch-time - The
-  time when the instance was launched, in the ISO 8601 format in the UTC time zone
-  (YYYY-MM-DDThh:mm:ss.sssZ), for example, 2021-09-29T11:04:43.305Z. You can use a wildcard
-  (*), for example, 2021-09-29T*, which matches an entire day.
+  associated with the instance. Specified as an ARN.    iam-instance-profile.id - The
+  instance profile associated with the instance. Specified as an ID.
+  iam-instance-profile.name - The instance profile associated with the instance. Specified as
+  an name.    image-id - The ID of the image used to launch the instance.    instance-id -
+  The ID of the instance.    instance-lifecycle - Indicates whether this is a Spot Instance
+  or a Scheduled Instance (spot | scheduled).    instance-state-code - The state of the
+  instance, as a 16-bit unsigned integer. The high byte is used for internal purposes and
+  should be ignored. The low byte is set based on the state represented. The valid values
+  are: 0 (pending), 16 (running), 32 (shutting-down), 48 (terminated), 64 (stopping), and 80
+  (stopped).    instance-state-name - The state of the instance (pending | running |
+  shutting-down | terminated | stopping | stopped).    instance-type - The type of instance
+  (for example, t2.micro).    instance.group-id - The ID of the security group for the
+  instance.     instance.group-name - The name of the security group for the instance.
+  ip-address - The public IPv4 address of the instance.    ipv6-address - The IPv6 address of
+  the instance.    kernel-id - The kernel ID.    key-name - The name of the key pair used
+  when the instance was launched.    launch-index - When launching multiple instances, this
+  is the index for the instance in the launch group (for example, 0, 1, 2, and so on).
+  launch-time - The time when the instance was launched, in the ISO 8601 format in the UTC
+  time zone (YYYY-MM-DDThh:mm:ss.sssZ), for example, 2021-09-29T11:04:43.305Z. You can use a
+  wildcard (*), for example, 2021-09-29T*, which matches an entire day.    license-pool -
+  maintenance-options.auto-recovery - The current automatic recovery behavior of the instance
+  (disabled | default).    metadata-options.http-endpoint - The status of access to the HTTP
+  metadata endpoint on your instance (enabled | disabled)
+  metadata-options.http-protocol-ipv4 - Indicates whether the IPv4 endpoint is enabled
+  (disabled | enabled).    metadata-options.http-protocol-ipv6 - Indicates whether the IPv6
+  endpoint is enabled (disabled | enabled).    metadata-options.http-put-response-hop-limit -
+  The HTTP metadata request put response hop limit (integer, possible values 1 to 64)
   metadata-options.http-tokens - The metadata request authorization state (optional |
-  required)    metadata-options.http-put-response-hop-limit - The HTTP metadata request put
-  response hop limit (integer, possible values 1 to 64)    metadata-options.http-endpoint -
-  The status of access to the HTTP metadata endpoint on your instance (enabled | disabled)
-  metadata-options.instance-metadata-tags - The status of access to instance tags from the
-  instance metadata (enabled | disabled)    monitoring-state - Indicates whether detailed
-  monitoring is enabled (disabled | enabled).
-  network-interface.addresses.private-ip-address - The private IPv4 address associated with
-  the network interface.    network-interface.addresses.primary - Specifies whether the IPv4
-  address of the network interface is the primary private IPv4 address.
-  network-interface.addresses.association.public-ip - The ID of the association of an Elastic
-  IP address (IPv4) with a network interface.
+  required)    metadata-options.instance-metadata-tags - The status of access to instance
+  tags from the instance metadata (enabled | disabled)    metadata-options.state - The state
+  of the metadata option changes (pending | applied).    monitoring-state - Indicates whether
+  detailed monitoring is enabled (disabled | enabled).    network-interface.addresses.primary
+  - Specifies whether the IPv4 address of the network interface is the primary private IPv4
+  address.    network-interface.addresses.private-ip-address - The private IPv4 address
+  associated with the network interface.    network-interface.addresses.association.public-ip
+  - The ID of the association of an Elastic IP address (IPv4) with a network interface.
   network-interface.addresses.association.ip-owner-id - The owner ID of the private IPv4
   address associated with the network interface.    network-interface.association.public-ip -
   The address of the Elastic IP address (IPv4) bound to the network interface.
@@ -14071,36 +14082,55 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   account ID of the instance owner.    placement-group-name - The name of the placement group
   for the instance.    placement-partition-number - The partition in which the instance is
   located.    platform - The platform. To list only Windows instances, use windows.
-  private-dns-name - The private IPv4 DNS name of the instance.    private-ip-address - The
-  private IPv4 address of the instance.    product-code - The product code associated with
-  the AMI used to launch the instance.    product-code.type - The type of product code
-  (devpay | marketplace).    ramdisk-id - The RAM disk ID.    reason - The reason for the
-  current state of the instance (for example, shows \"User Initiated [date]\" when you stop
-  or terminate the instance). Similar to the state-reason-code filter.    requester-id - The
-  ID of the entity that launched the instance on your behalf (for example, Amazon Web
-  Services Management Console, Auto Scaling, and so on).    reservation-id - The ID of the
-  instance's reservation. A reservation ID is created any time you launch an instance. A
-  reservation ID has a one-to-one relationship with an instance launch request, but can be
-  associated with more than one instance if you launch multiple instances using the same
-  launch request. For example, if you launch one instance, you get one reservation ID. If you
-  launch ten instances using the same launch request, you also get one reservation ID.
-  root-device-name - The device name of the root device volume (for example, /dev/sda1).
-  root-device-type - The type of the root device volume (ebs | instance-store).
-  source-dest-check - Indicates whether the instance performs source/destination checking. A
-  value of true means that checking is enabled, and false means that checking is disabled.
-  The value must be false for the instance to perform network address translation (NAT) in
-  your VPC.     spot-instance-request-id - The ID of the Spot Instance request.
-  state-reason-code - The reason code for the state change.    state-reason-message - A
-  message that describes the state change.    subnet-id - The ID of the subnet for the
-  instance.    tag:&lt;key&gt; - The key/value combination of a tag assigned to the resource.
-  Use the tag key in the filter name and the tag value as the filter value. For example, to
-  find all resources that have a tag with the key Owner and the value TeamA, specify
-  tag:Owner for the filter name and TeamA for the filter value.    tag-key - The key of a tag
-  assigned to the resource. Use this filter to find all resources that have a tag with a
-  specific key, regardless of the tag value.    tenancy - The tenancy of an instance
-  (dedicated | default | host).    virtualization-type - The virtualization type of the
-  instance (paravirtual | hvm).    vpc-id - The ID of the VPC that the instance is running
-  in.
+  platform-details - The platform (Linux/UNIX | Red Hat BYOL Linux |  Red Hat Enterprise
+  Linux | Red Hat Enterprise Linux with HA | Red Hat Enterprise Linux with SQL Server
+  Standard and HA | Red Hat Enterprise Linux with SQL Server Enterprise and HA | Red Hat
+  Enterprise Linux with SQL Server Standard | Red Hat Enterprise Linux with SQL Server Web |
+  Red Hat Enterprise Linux with SQL Server Enterprise | SQL Server Enterprise | SQL Server
+  Standard | SQL Server Web | SUSE Linux | Ubuntu Pro | Windows | Windows BYOL | Windows with
+  SQL Server Enterprise | Windows with SQL Server Standard | Windows with SQL Server Web).
+  private-dns-name - The private IPv4 DNS name of the instance.
+  private-dns-name-options.enable-resource-name-dns-a-record - A Boolean that indicates
+  whether to respond to DNS queries for instance hostnames with DNS A records.
+  private-dns-name-options.enable-resource-name-dns-aaaa-record - A Boolean that indicates
+  whether to respond to DNS queries for instance hostnames with DNS AAAA records.
+  private-dns-name-options.hostname-type - The type of hostname (ip-name | resource-name).
+  private-ip-address - The private IPv4 address of the instance.    product-code - The
+  product code associated with the AMI used to launch the instance.    product-code.type -
+  The type of product code (devpay | marketplace).    ramdisk-id - The RAM disk ID.    reason
+  - The reason for the current state of the instance (for example, shows \"User Initiated
+  [date]\" when you stop or terminate the instance). Similar to the state-reason-code filter.
+     requester-id - The ID of the entity that launched the instance on your behalf (for
+  example, Amazon Web Services Management Console, Auto Scaling, and so on).
+  reservation-id - The ID of the instance's reservation. A reservation ID is created any time
+  you launch an instance. A reservation ID has a one-to-one relationship with an instance
+  launch request, but can be associated with more than one instance if you launch multiple
+  instances using the same launch request. For example, if you launch one instance, you get
+  one reservation ID. If you launch ten instances using the same launch request, you also get
+  one reservation ID.    root-device-name - The device name of the root device volume (for
+  example, /dev/sda1).    root-device-type - The type of the root device volume (ebs |
+  instance-store).    source-dest-check - Indicates whether the instance performs
+  source/destination checking. A value of true means that checking is enabled, and false
+  means that checking is disabled. The value must be false for the instance to perform
+  network address translation (NAT) in your VPC.     spot-instance-request-id - The ID of the
+  Spot Instance request.    state-reason-code - The reason code for the state change.
+  state-reason-message - A message that describes the state change.    subnet-id - The ID of
+  the subnet for the instance.    tag:&lt;key&gt; - The key/value combination of a tag
+  assigned to the resource. Use the tag key in the filter name and the tag value as the
+  filter value. For example, to find all resources that have a tag with the key Owner and the
+  value TeamA, specify tag:Owner for the filter name and TeamA for the filter value.
+  tag-key - The key of a tag assigned to the resource. Use this filter to find all resources
+  that have a tag with a specific key, regardless of the tag value.    tenancy - The tenancy
+  of an instance (dedicated | default | host).    tpm-support - Indicates if the instance is
+  configured for NitroTPM support (v2.0).     usage-operation - The usage operation value for
+  the instance (RunInstances | RunInstances:00g0 | RunInstances:0010 | RunInstances:1010 |
+  RunInstances:1014 | RunInstances:1110 | RunInstances:0014 | RunInstances:0210 |
+  RunInstances:0110 | RunInstances:0100 | RunInstances:0004 | RunInstances:0200 |
+  RunInstances:000g | RunInstances:0g00 | RunInstances:0002 | RunInstances:0800 |
+  RunInstances:0102 | RunInstances:0006 | RunInstances:0202).    usage-operation-update-time
+  - The time that the usage operation was last updated, for example,
+  2022-09-15T17:15:20.000Z.    virtualization-type - The virtualization type of the instance
+  (paravirtual | hvm).    vpc-id - The ID of the VPC that the instance is running in.
 - `"InstanceId"`: The instance IDs. Default: Describes all your instances.
 - `"dryRun"`: Checks whether you have the required permissions for the action, without
   actually making the request, and provides an error response. If you have the required
@@ -14131,9 +14161,9 @@ Describes one or more of your internet gateways.
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
-- `"Filter"`: One or more filters.    attachment.state - The current state of the
-  attachment between the gateway and the VPC (available). Present only if a VPC is attached.
-    attachment.vpc-id - The ID of an attached VPC.    internet-gateway-id - The ID of the
+- `"Filter"`: The filters.    attachment.state - The current state of the attachment
+  between the gateway and the VPC (available). Present only if a VPC is attached.
+  attachment.vpc-id - The ID of an attached VPC.    internet-gateway-id - The ID of the
   Internet gateway.    owner-id - The ID of the Amazon Web Services account that owns the
   internet gateway.    tag:&lt;key&gt; - The key/value combination of a tag assigned to the
   resource. Use the tag key in the filter name and the tag value as the filter value. For
@@ -14149,7 +14179,7 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
 - `"dryRun"`: Checks whether you have the required permissions for the action, without
   actually making the request, and provides an error response. If you have the required
   permissions, the error response is DryRunOperation. Otherwise, it is UnauthorizedOperation.
-- `"internetGatewayId"`: One or more internet gateway IDs. Default: Describes all your
+- `"internetGatewayId"`: The IDs of the internet gateways. Default: Describes all your
   internet gateways.
 """
 function describe_internet_gateways(; aws_config::AbstractAWSConfig=global_aws_config())
@@ -14852,19 +14882,19 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
 - `"DryRun"`: Checks whether you have the required permissions for the action, without
   actually making the request, and provides an error response. If you have the required
   permissions, the error response is DryRunOperation. Otherwise, it is UnauthorizedOperation.
-- `"Filter"`: One or more filters.    nat-gateway-id - The ID of the NAT gateway.    state
-  - The state of the NAT gateway (pending | failed | available | deleting | deleted).
-  subnet-id - The ID of the subnet in which the NAT gateway resides.    tag:&lt;key&gt; - The
-  key/value combination of a tag assigned to the resource. Use the tag key in the filter name
-  and the tag value as the filter value. For example, to find all resources that have a tag
-  with the key Owner and the value TeamA, specify tag:Owner for the filter name and TeamA for
-  the filter value.    tag-key - The key of a tag assigned to the resource. Use this filter
-  to find all resources assigned a tag with a specific key, regardless of the tag value.
+- `"Filter"`: The filters.    nat-gateway-id - The ID of the NAT gateway.    state - The
+  state of the NAT gateway (pending | failed | available | deleting | deleted).    subnet-id
+  - The ID of the subnet in which the NAT gateway resides.    tag:&lt;key&gt; - The key/value
+  combination of a tag assigned to the resource. Use the tag key in the filter name and the
+  tag value as the filter value. For example, to find all resources that have a tag with the
+  key Owner and the value TeamA, specify tag:Owner for the filter name and TeamA for the
+  filter value.    tag-key - The key of a tag assigned to the resource. Use this filter to
+  find all resources assigned a tag with a specific key, regardless of the tag value.
   vpc-id - The ID of the VPC in which the NAT gateway resides.
 - `"MaxResults"`: The maximum number of items to return for this request. To get the next
   page of items, make another request with the token returned in the output. For more
   information, see Pagination.
-- `"NatGatewayId"`: One or more NAT gateway IDs.
+- `"NatGatewayId"`: The IDs of the NAT gateways.
 - `"NextToken"`: The token returned from a previous paginated request. Pagination continues
   from the end of the items returned by the previous request.
 """
@@ -14889,12 +14919,12 @@ end
     describe_network_acls(params::Dict{String,<:Any})
 
 Describes one or more of your network ACLs. For more information, see Network ACLs in the
-Amazon Virtual Private Cloud User Guide.
+Amazon VPC User Guide.
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
-- `"Filter"`: One or more filters.    association.association-id - The ID of an association
-  ID for the ACL.    association.network-acl-id - The ID of the network ACL involved in the
+- `"Filter"`: The filters.    association.association-id - The ID of an association ID for
+  the ACL.    association.network-acl-id - The ID of the network ACL involved in the
   association.    association.subnet-id - The ID of the subnet involved in the association.
    default - Indicates whether the ACL is the default network ACL for the VPC.    entry.cidr
   - The IPv4 CIDR range specified in the entry.    entry.icmp.code - The ICMP code specified
@@ -14917,7 +14947,7 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
 - `"MaxResults"`: The maximum number of items to return for this request. To get the next
   page of items, make another request with the token returned in the output. For more
   information, see Pagination.
-- `"NetworkAclId"`: One or more network ACL IDs. Default: Describes all your network ACLs.
+- `"NetworkAclId"`: The IDs of the network ACLs. Default: Describes all your network ACLs.
 - `"NextToken"`: The token returned from a previous paginated request. Pagination continues
   from the end of the items returned by the previous request.
 - `"dryRun"`: Checks whether you have the required permissions for the action, without
@@ -15753,12 +15783,12 @@ end
 Describes one or more of your route tables. Each subnet in your VPC must be associated with
 a route table. If a subnet is not explicitly associated with any route table, it is
 implicitly associated with the main route table. This command does not return the subnet ID
-for implicit associations. For more information, see Route tables in the Amazon Virtual
-Private Cloud User Guide.
+for implicit associations. For more information, see Route tables in the Amazon VPC User
+Guide.
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
-- `"Filter"`: One or more filters.    association.route-table-association-id - The ID of an
+- `"Filter"`: The filters.    association.route-table-association-id - The ID of an
   association ID for the route table.    association.route-table-id - The ID of the route
   table involved in the association.    association.subnet-id - The ID of the subnet involved
   in the association.    association.main - Indicates whether the route table is the main
@@ -15792,7 +15822,7 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   information, see Pagination.
 - `"NextToken"`: The token returned from a previous paginated request. Pagination continues
   from the end of the items returned by the previous request.
-- `"RouteTableId"`: One or more route table IDs. Default: Describes all your route tables.
+- `"RouteTableId"`: The IDs of the route tables. Default: Describes all your route tables.
 - `"dryRun"`: Checks whether you have the required permissions for the action, without
   actually making the request, and provides an error response. If you have the required
   permissions, the error response is DryRunOperation. Otherwise, it is UnauthorizedOperation.
@@ -15923,8 +15953,8 @@ end
     describe_security_group_references(item)
     describe_security_group_references(item, params::Dict{String,<:Any})
 
-[VPC only] Describes the VPCs on the other side of a VPC peering connection that are
-referencing the security groups you've specified in this request.
+Describes the VPCs on the other side of a VPC peering connection that are referencing the
+security groups you've specified in this request.
 
 # Arguments
 - `item`: The IDs of the security groups in your account.
@@ -16002,13 +16032,7 @@ end
     describe_security_groups()
     describe_security_groups(params::Dict{String,<:Any})
 
-Describes the specified security groups or all of your security groups. A security group is
-for use with instances either in the EC2-Classic platform or in a specific VPC. For more
-information, see Amazon EC2 security groups in the Amazon Elastic Compute Cloud User Guide
-and Security groups for your VPC in the Amazon Virtual Private Cloud User Guide.  We are
-retiring EC2-Classic. We recommend that you migrate from EC2-Classic to a VPC. For more
-information, see Migrate from EC2-Classic to a VPC in the Amazon Elastic Compute Cloud User
-Guide.
+Describes the specified security groups or all of your security groups.
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
@@ -16050,10 +16074,9 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   VPC specified when the security group was created.
 - `"GroupId"`: The IDs of the security groups. Required for security groups in a nondefault
   VPC. Default: Describes all of your security groups.
-- `"GroupName"`: [EC2-Classic and default VPC only] The names of the security groups. You
-  can specify either the security group name or the security group ID. For security groups in
-  a nondefault VPC, use the group-name filter to describe security groups by name. Default:
-  Describes all of your security groups.
+- `"GroupName"`: [Default VPC] The names of the security groups. You can specify either the
+  security group name or the security group ID. Default: Describes all of your security
+  groups.
 - `"MaxResults"`: The maximum number of items to return for this request. To get the next
   page of items, make another request with the token returned in the output. This value can
   be between 5 and 1000. If this parameter is not specified, then all items are returned. For
@@ -16568,10 +16591,10 @@ end
     describe_stale_security_groups(vpc_id)
     describe_stale_security_groups(vpc_id, params::Dict{String,<:Any})
 
-[VPC only] Describes the stale security group rules for security groups in a specified VPC.
-Rules are stale when they reference a deleted security group in the same VPC or in a peer
-VPC, or if they reference a security group in a peer VPC for which the VPC peering
-connection has been deleted.
+Describes the stale security group rules for security groups in a specified VPC. Rules are
+stale when they reference a deleted security group in the same VPC or in a peer VPC, or if
+they reference a security group in a peer VPC for which the VPC peering connection has been
+deleted.
 
 # Arguments
 - `vpc_id`: The ID of the VPC.
@@ -16659,25 +16682,25 @@ end
     describe_subnets()
     describe_subnets(params::Dict{String,<:Any})
 
-Describes one or more of your subnets. For more information, see Your VPC and subnets in
-the Amazon Virtual Private Cloud User Guide.
+Describes one or more of your subnets. For more information, see Subnets in the Amazon VPC
+User Guide.
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
-- `"Filter"`: One or more filters.    availability-zone - The Availability Zone for the
-  subnet. You can also use availabilityZone as the filter name.    availability-zone-id - The
-  ID of the Availability Zone for the subnet. You can also use availabilityZoneId as the
-  filter name.    available-ip-address-count - The number of IPv4 addresses in the subnet
-  that are available.    cidr-block - The IPv4 CIDR block of the subnet. The CIDR block you
-  specify must exactly match the subnet's CIDR block for information to be returned for the
-  subnet. You can also use cidr or cidrBlock as the filter names.    customer-owned-ipv4-pool
-  - The customer-owned IPv4 address pool associated with the subnet.    default-for-az -
-  Indicates whether this is the default subnet for the Availability Zone (true | false). You
-  can also use defaultForAz as the filter name.    enable-dns64 - Indicates whether DNS
-  queries made to the Amazon-provided DNS Resolver in this subnet should return synthetic
-  IPv6 addresses for IPv4-only destinations.    enable-lni-at-device-index - Indicates the
-  device position for local network interfaces in this subnet. For example, 1 indicates local
-  network interfaces in this subnet are the secondary network interface (eth1).
+- `"Filter"`: The filters.    availability-zone - The Availability Zone for the subnet. You
+  can also use availabilityZone as the filter name.    availability-zone-id - The ID of the
+  Availability Zone for the subnet. You can also use availabilityZoneId as the filter name.
+   available-ip-address-count - The number of IPv4 addresses in the subnet that are
+  available.    cidr-block - The IPv4 CIDR block of the subnet. The CIDR block you specify
+  must exactly match the subnet's CIDR block for information to be returned for the subnet.
+  You can also use cidr or cidrBlock as the filter names.    customer-owned-ipv4-pool - The
+  customer-owned IPv4 address pool associated with the subnet.    default-for-az - Indicates
+  whether this is the default subnet for the Availability Zone (true | false). You can also
+  use defaultForAz as the filter name.    enable-dns64 - Indicates whether DNS queries made
+  to the Amazon-provided DNS Resolver in this subnet should return synthetic IPv6 addresses
+  for IPv4-only destinations.    enable-lni-at-device-index - Indicates the device position
+  for local network interfaces in this subnet. For example, 1 indicates local network
+  interfaces in this subnet are the secondary network interface (eth1).
   ipv6-cidr-block-association.ipv6-cidr-block - An IPv6 CIDR block associated with the
   subnet.    ipv6-cidr-block-association.association-id - An association ID for an IPv6 CIDR
   block associated with the subnet.    ipv6-cidr-block-association.state - The state of an
@@ -16709,7 +16732,7 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   information, see Pagination.
 - `"NextToken"`: The token returned from a previous paginated request. Pagination continues
   from the end of the items returned by the previous request.
-- `"SubnetId"`: One or more subnet IDs. Default: Describes all your subnets.
+- `"SubnetId"`: The IDs of the subnets. Default: Describes all your subnets.
 - `"dryRun"`: Checks whether you have the required permissions for the action, without
   actually making the request, and provides an error response. If you have the required
   permissions, the error response is DryRunOperation. Otherwise, it is UnauthorizedOperation.
@@ -17823,20 +17846,18 @@ end
     describe_vpc_classic_link()
     describe_vpc_classic_link(params::Dict{String,<:Any})
 
-Describes the ClassicLink status of one or more VPCs.  We are retiring EC2-Classic. We
-recommend that you migrate from EC2-Classic to a VPC. For more information, see Migrate
-from EC2-Classic to a VPC in the Amazon Elastic Compute Cloud User Guide.
+ This action is deprecated.  Describes the ClassicLink status of the specified VPCs.
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
-- `"Filter"`: One or more filters.    is-classic-link-enabled - Whether the VPC is enabled
-  for ClassicLink (true | false).    tag:&lt;key&gt; - The key/value combination of a tag
+- `"Filter"`: The filters.    is-classic-link-enabled - Whether the VPC is enabled for
+  ClassicLink (true | false).    tag:&lt;key&gt; - The key/value combination of a tag
   assigned to the resource. Use the tag key in the filter name and the tag value as the
   filter value. For example, to find all resources that have a tag with the key Owner and the
   value TeamA, specify tag:Owner for the filter name and TeamA for the filter value.
   tag-key - The key of a tag assigned to the resource. Use this filter to find all resources
   assigned a tag with a specific key, regardless of the tag value.
-- `"VpcId"`: One or more VPCs for which you want to describe the ClassicLink status.
+- `"VpcId"`: The VPCs for which you want to describe the ClassicLink status.
 - `"dryRun"`: Checks whether you have the required permissions for the action, without
   actually making the request, and provides an error response. If you have the required
   permissions, the error response is DryRunOperation. Otherwise, it is UnauthorizedOperation.
@@ -17861,18 +17882,15 @@ end
     describe_vpc_classic_link_dns_support()
     describe_vpc_classic_link_dns_support(params::Dict{String,<:Any})
 
- We are retiring EC2-Classic. We recommend that you migrate from EC2-Classic to a VPC. For
-more information, see Migrate from EC2-Classic to a VPC in the Amazon Elastic Compute Cloud
-User Guide.  Describes the ClassicLink DNS support status of one or more VPCs. If enabled,
-the DNS hostname of a linked EC2-Classic instance resolves to its private IP address when
-addressed from an instance in the VPC to which it's linked. Similarly, the DNS hostname of
-an instance in a VPC resolves to its private IP address when addressed from a linked
-EC2-Classic instance. For more information, see ClassicLink in the Amazon Elastic Compute
-Cloud User Guide.
+ This action is deprecated.  Describes the ClassicLink DNS support status of one or more
+VPCs. If enabled, the DNS hostname of a linked EC2-Classic instance resolves to its private
+IP address when addressed from an instance in the VPC to which it's linked. Similarly, the
+DNS hostname of an instance in a VPC resolves to its private IP address when addressed from
+a linked EC2-Classic instance.
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
-- `"VpcIds"`: One or more VPC IDs.
+- `"VpcIds"`: The IDs of the VPCs.
 - `"maxResults"`: The maximum number of items to return for this request. To get the next
   page of items, make another request with the token returned in the output. For more
   information, see Pagination.
@@ -18181,8 +18199,8 @@ Describes one or more of your VPC peering connections.
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
-- `"Filter"`: One or more filters.    accepter-vpc-info.cidr-block - The IPv4 CIDR block of
-  the accepter VPC.    accepter-vpc-info.owner-id - The ID of the Amazon Web Services account
+- `"Filter"`: The filters.    accepter-vpc-info.cidr-block - The IPv4 CIDR block of the
+  accepter VPC.    accepter-vpc-info.owner-id - The ID of the Amazon Web Services account
   that owns the accepter VPC.    accepter-vpc-info.vpc-id - The ID of the accepter VPC.
   expiration-time - The expiration date and time for the VPC peering connection.
   requester-vpc-info.cidr-block - The IPv4 CIDR block of the requester's VPC.
@@ -18203,7 +18221,7 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   information, see Pagination.
 - `"NextToken"`: The token returned from a previous paginated request. Pagination continues
   from the end of the items returned by the previous request.
-- `"VpcPeeringConnectionId"`: One or more VPC peering connection IDs. Default: Describes
+- `"VpcPeeringConnectionId"`: The IDs of the VPC peering connections. Default: Describes
   all your VPC peering connections.
 - `"dryRun"`: Checks whether you have the required permissions for the action, without
   actually making the request, and provides an error response. If you have the required
@@ -18237,10 +18255,10 @@ Describes one or more of your VPCs.
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
-- `"Filter"`: One or more filters.    cidr - The primary IPv4 CIDR block of the VPC. The
-  CIDR block you specify must exactly match the VPC's CIDR block for information to be
-  returned for the VPC. Must contain the slash followed by one or two digits (for example,
-  /28).    cidr-block-association.cidr-block - An IPv4 CIDR block associated with the VPC.
+- `"Filter"`: The filters.    cidr - The primary IPv4 CIDR block of the VPC. The CIDR block
+  you specify must exactly match the VPC's CIDR block for information to be returned for the
+  VPC. Must contain the slash followed by one or two digits (for example, /28).
+  cidr-block-association.cidr-block - An IPv4 CIDR block associated with the VPC.
   cidr-block-association.association-id - The association ID for an IPv4 CIDR block
   associated with the VPC.    cidr-block-association.state - The state of an IPv4 CIDR block
   associated with the VPC.    dhcp-options-id - The ID of a set of DHCP options.
@@ -18262,7 +18280,7 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   information, see Pagination.
 - `"NextToken"`: The token returned from a previous paginated request. Pagination continues
   from the end of the items returned by the previous request.
-- `"VpcId"`: One or more VPC IDs. Default: Describes all your VPCs.
+- `"VpcId"`: The IDs of the VPCs. Default: Describes all your VPCs.
 - `"dryRun"`: Checks whether you have the required permissions for the action, without
   actually making the request, and provides an error response. If you have the required
   permissions, the error response is DryRunOperation. Otherwise, it is UnauthorizedOperation.
@@ -18374,11 +18392,9 @@ end
     detach_classic_link_vpc(instance_id, vpc_id)
     detach_classic_link_vpc(instance_id, vpc_id, params::Dict{String,<:Any})
 
- We are retiring EC2-Classic. We recommend that you migrate from EC2-Classic to a VPC. For
-more information, see Migrate from EC2-Classic to a VPC in the Amazon Elastic Compute Cloud
-User Guide.  Unlinks (detaches) a linked EC2-Classic instance from a VPC. After the
-instance has been unlinked, the VPC security groups are no longer associated with it. An
-instance is automatically unlinked from a VPC when it's stopped.
+ This action is deprecated.  Unlinks (detaches) a linked EC2-Classic instance from a VPC.
+After the instance has been unlinked, the VPC security groups are no longer associated with
+it. An instance is automatically unlinked from a VPC when it's stopped.
 
 # Arguments
 - `instance_id`: The ID of the instance to unlink from the VPC.
@@ -19106,10 +19122,8 @@ end
     disable_vpc_classic_link(vpc_id)
     disable_vpc_classic_link(vpc_id, params::Dict{String,<:Any})
 
-Disables ClassicLink for a VPC. You cannot disable ClassicLink for a VPC that has
-EC2-Classic instances linked to it.  We are retiring EC2-Classic. We recommend that you
-migrate from EC2-Classic to a VPC. For more information, see Migrate from EC2-Classic to a
-VPC in the Amazon Elastic Compute Cloud User Guide.
+ This action is deprecated.  Disables ClassicLink for a VPC. You cannot disable ClassicLink
+for a VPC that has EC2-Classic instances linked to it.
 
 # Arguments
 - `vpc_id`: The ID of the VPC.
@@ -19143,12 +19157,10 @@ end
     disable_vpc_classic_link_dns_support()
     disable_vpc_classic_link_dns_support(params::Dict{String,<:Any})
 
-Disables ClassicLink DNS support for a VPC. If disabled, DNS hostnames resolve to public IP
-addresses when addressed between a linked EC2-Classic instance and instances in the VPC to
-which it's linked. For more information, see ClassicLink in the Amazon Elastic Compute
-Cloud User Guide. You must specify a VPC ID in the request.  We are retiring EC2-Classic.
-We recommend that you migrate from EC2-Classic to a VPC. For more information, see Migrate
-from EC2-Classic to a VPC in the Amazon Elastic Compute Cloud User Guide.
+ This action is deprecated.  Disables ClassicLink DNS support for a VPC. If disabled, DNS
+hostnames resolve to public IP addresses when addressed between a linked EC2-Classic
+instance and instances in the VPC to which it's linked. You must specify a VPC ID in the
+request.
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
@@ -19460,18 +19472,18 @@ end
 
 Disassociates secondary Elastic IP addresses (EIPs) from a public NAT gateway. You cannot
 disassociate your primary EIP. For more information, see Edit secondary IP address
-associations in the Amazon Virtual Private Cloud User Guide. While disassociating is in
-progress, you cannot associate/disassociate additional EIPs while the connections are being
-drained. You are, however, allowed to delete the NAT gateway. An EIP will only be released
-at the end of MaxDrainDurationSeconds. The EIPs stay associated and support the existing
-connections but do not support any new connections (new connections are distributed across
-the remaining associated EIPs). As the existing connections drain out, the EIPs (and the
-corresponding private IPs mapped to them) get released.
+associations in the Amazon VPC User Guide. While disassociating is in progress, you cannot
+associate/disassociate additional EIPs while the connections are being drained. You are,
+however, allowed to delete the NAT gateway. An EIP is released only at the end of
+MaxDrainDurationSeconds. It stays associated and supports the existing connections but does
+not support any new connections (new connections are distributed across the remaining
+associated EIPs). As the existing connections drain out, the EIPs (and the corresponding
+private IP addresses mapped to them) are released.
 
 # Arguments
 - `association_id`: The association IDs of EIPs that have been associated with the NAT
   gateway.
-- `nat_gateway_id`: The NAT gateway ID.
+- `nat_gateway_id`: The ID of the NAT gateway.
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
@@ -19521,7 +19533,7 @@ end
 Disassociates a subnet or gateway from a route table. After you perform this action, the
 subnet no longer uses the routes in the route table. Instead, it uses the routes in the
 VPC's main route table. For more information about route tables, see Route tables in the
-Amazon Virtual Private Cloud User Guide.
+Amazon VPC User Guide.
 
 # Arguments
 - `association_id`: The association ID representing the current association between the
@@ -20400,14 +20412,11 @@ end
     enable_vpc_classic_link(vpc_id)
     enable_vpc_classic_link(vpc_id, params::Dict{String,<:Any})
 
- We are retiring EC2-Classic. We recommend that you migrate from EC2-Classic to a VPC. For
-more information, see Migrate from EC2-Classic to a VPC in the Amazon Elastic Compute Cloud
-User Guide.  Enables a VPC for ClassicLink. You can then link EC2-Classic instances to your
-ClassicLink-enabled VPC to allow communication over private IP addresses. You cannot enable
-your VPC for ClassicLink if any of your VPC route tables have existing routes for address
-ranges within the 10.0.0.0/8 IP address range, excluding local routes for VPCs in the
-10.0.0.0/16 and 10.1.0.0/16 IP address ranges. For more information, see ClassicLink in the
-Amazon Elastic Compute Cloud User Guide.
+ This action is deprecated.  Enables a VPC for ClassicLink. You can then link EC2-Classic
+instances to your ClassicLink-enabled VPC to allow communication over private IP addresses.
+You cannot enable your VPC for ClassicLink if any of your VPC route tables have existing
+routes for address ranges within the 10.0.0.0/8 IP address range, excluding local routes
+for VPCs in the 10.0.0.0/16 and 10.1.0.0/16 IP address ranges.
 
 # Arguments
 - `vpc_id`: The ID of the VPC.
@@ -20441,14 +20450,11 @@ end
     enable_vpc_classic_link_dns_support()
     enable_vpc_classic_link_dns_support(params::Dict{String,<:Any})
 
- We are retiring EC2-Classic. We recommend that you migrate from EC2-Classic to a VPC. For
-more information, see Migrate from EC2-Classic to a VPC in the Amazon Elastic Compute Cloud
-User Guide.  Enables a VPC to support DNS hostname resolution for ClassicLink. If enabled,
-the DNS hostname of a linked EC2-Classic instance resolves to its private IP address when
-addressed from an instance in the VPC to which it's linked. Similarly, the DNS hostname of
-an instance in a VPC resolves to its private IP address when addressed from a linked
-EC2-Classic instance. For more information, see ClassicLink in the Amazon Elastic Compute
-Cloud User Guide. You must specify a VPC ID in the request.
+ This action is deprecated.  Enables a VPC to support DNS hostname resolution for
+ClassicLink. If enabled, the DNS hostname of a linked EC2-Classic instance resolves to its
+private IP address when addressed from an instance in the VPC to which it's linked.
+Similarly, the DNS hostname of an instance in a VPC resolves to its private IP address when
+addressed from a linked EC2-Classic instance. You must specify a VPC ID in the request.
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
@@ -21125,6 +21131,8 @@ the template to do the following:   Create a table in Athena that maps fields to
 log format   Create a Lambda function that updates the table with new partitions on a
 daily, weekly, or monthly basis   Create a table partitioned between two timestamps in the
 past   Create a set of named queries in Athena that you can use to get started quickly
+GetFlowLogsIntegrationTemplate does not support integration between Amazon Web Services
+Transit Gateway Flow Logs and Amazon Athena.
 
 # Arguments
 - `config_delivery_s3_destination_arn`: To store the CloudFormation template in Amazon S3,
@@ -22909,12 +22917,9 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   AMI. This parameter is only required if you want to use a non-default KMS key; if this
   parameter is not specified, the default KMS key for EBS is used. If a KmsKeyId is
   specified, the Encrypted flag must also be set.  The KMS key identifier may be provided in
-  any of the following formats:    Key ID   Key alias. The alias ARN contains the arn:aws:kms
-  namespace, followed by the Region of the key, the Amazon Web Services account ID of the key
-  owner, the alias namespace, and then the key alias. For example,
-  arn:aws:kms:us-east-1:012345678910:alias/ExampleAlias.   ARN using key ID. The ID ARN
-  contains the arn:aws:kms namespace, followed by the Region of the key, the Amazon Web
-  Services account ID of the key owner, the key namespace, and then the key ID. For example,
+  any of the following formats:    Key ID   Key alias   ARN using key ID. The ID ARN contains
+  the arn:aws:kms namespace, followed by the Region of the key, the Amazon Web Services
+  account ID of the key owner, the key namespace, and then the key ID. For example,
   arn:aws:kms:us-east-1:012345678910:key/abcd1234-a123-456a-a12b-a123b4cd56ef.   ARN using
   key alias. The alias ARN contains the arn:aws:kms namespace, followed by the Region of the
   key, the Amazon Web Services account ID of the key owner, the alias namespace, and then the
@@ -22932,7 +22937,9 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   Linux operating system. To use BYOL, you must have existing licenses with rights to use
   these licenses in a third party cloud, such as Amazon Web Services. For more information,
   see Prerequisites in the VM Import/Export User Guide.
-- `"Platform"`: The operating system of the virtual machine. Valid values: Windows | Linux
+- `"Platform"`: The operating system of the virtual machine. If you import a VM that is
+  compatible with Unified Extensible Firmware Interface (UEFI) using an EBS snapshot, you
+  must specify a value for the platform. Valid values: Windows | Linux
 - `"RoleName"`: The name of the role to use when not using the default role, 'vmimport'.
 - `"TagSpecification"`: The tags to apply to the import image task during creation.
 - `"UsageOperation"`: The usage operation value. For more information, see Licensing
@@ -22953,12 +22960,14 @@ end
     import_instance(platform)
     import_instance(platform, params::Dict{String,<:Any})
 
-Creates an import instance task using metadata from the specified disk image. This API
-action supports only single-volume VMs. To import multi-volume VMs, use ImportImage
-instead. This API action is not supported by the Command Line Interface (CLI). For
-information about using the Amazon EC2 CLI, which is deprecated, see Importing a VM to
-Amazon EC2 in the Amazon EC2 CLI Reference PDF file. For information about the import
-manifest referenced by this API action, see VM Import Manifest.
+ We recommend that you use the  ImportImage  API. For more information, see Importing a VM
+as an image using VM Import/Export in the VM Import/Export User Guide.  Creates an import
+instance task using metadata from the specified disk image. This API action is not
+supported by the Command Line Interface (CLI). For information about using the Amazon EC2
+CLI, which is deprecated, see Importing a VM to Amazon EC2 in the Amazon EC2 CLI Reference
+PDF file. This API action supports only single-volume VMs. To import multi-volume VMs, use
+ImportImage instead. For information about the import manifest referenced by this API
+action, see VM Import Manifest.
 
 # Arguments
 - `platform`: The instance operating system.
@@ -23075,12 +23084,9 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   snapshot. This parameter is only required if you want to use a non-default KMS key; if this
   parameter is not specified, the default KMS key for EBS is used. If a KmsKeyId is
   specified, the Encrypted flag must also be set.  The KMS key identifier may be provided in
-  any of the following formats:    Key ID   Key alias. The alias ARN contains the arn:aws:kms
-  namespace, followed by the Region of the key, the Amazon Web Services account ID of the key
-  owner, the alias namespace, and then the key alias. For example,
-  arn:aws:kms:us-east-1:012345678910:alias/ExampleAlias.   ARN using key ID. The ID ARN
-  contains the arn:aws:kms namespace, followed by the Region of the key, the Amazon Web
-  Services account ID of the key owner, the key namespace, and then the key ID. For example,
+  any of the following formats:    Key ID   Key alias   ARN using key ID. The ID ARN contains
+  the arn:aws:kms namespace, followed by the Region of the key, the Amazon Web Services
+  account ID of the key owner, the key namespace, and then the key ID. For example,
   arn:aws:kms:us-east-1:012345678910:key/abcd1234-a123-456a-a12b-a123b4cd56ef.   ARN using
   key alias. The alias ARN contains the arn:aws:kms namespace, followed by the Region of the
   key, the Amazon Web Services account ID of the key owner, the alias namespace, and then the
@@ -24398,7 +24404,7 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   this parameter is not specified, the existing state is maintained. If you specify a value
   of disabled, you cannot access your instance metadata.
 - `"HttpProtocolIpv6"`: Enables or disables the IPv6 endpoint for the instance metadata
-  service. This setting applies only if you have enabled the HTTP metadata endpoint.
+  service. Applies only if you enabled the HTTP metadata endpoint.
 - `"HttpPutResponseHopLimit"`: The desired HTTP PUT response hop limit for instance
   metadata requests. The larger the number, the further instance metadata requests can
   travel. If no parameter is specified, the existing state is maintained. Possible values:
@@ -24470,14 +24476,15 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   placement groups, the instance must have a tenancy of default or dedicated. To remove an
   instance from a placement group, specify an empty string (\"\").
 - `"HostResourceGroupArn"`: The ARN of the host resource group in which to place the
-  instance.
+  instance. The instance must have a tenancy of host to specify this parameter.
 - `"PartitionNumber"`: The number of the partition in which to place the instance. Valid
   only if the placement group strategy is set to partition.
 - `"affinity"`: The affinity setting for the instance.
 - `"hostId"`: The ID of the Dedicated Host with which to associate the instance.
-- `"tenancy"`: The tenancy for the instance.  For T3 instances, you can't change the
-  tenancy from dedicated to host, or from host to dedicated. Attempting to make one of these
-  unsupported tenancy changes results in the InvalidTenancy error code.
+- `"tenancy"`: The tenancy for the instance.  For T3 instances, you must launch the
+  instance on a Dedicated Host to use a tenancy of host. You can't change the tenancy from
+  host to dedicated or default. Attempting to make one of these unsupported tenancy changes
+  results in an InvalidRequest error code.
 """
 function modify_instance_placement(
     instanceId; aws_config::AbstractAWSConfig=global_aws_config()
@@ -24932,6 +24939,18 @@ instance.
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
 - `"EnaSrdSpecification"`: Updates the ENA Express configuration for the network interface
   that’s attached to the instance.
+- `"EnablePrimaryIpv6"`: If you’re modifying a network interface in a dual-stack or
+  IPv6-only subnet, you have the option to assign a primary IPv6 IP address. A primary IPv6
+  address is an IPv6 GUA address associated with an ENI that you have enabled to use a
+  primary IPv6 address. Use this option if the instance that this ENI will be attached to
+  relies on its IPv6 address not changing. Amazon Web Services will automatically assign an
+  IPv6 address associated with the ENI attached to your instance to be the primary IPv6
+  address. Once you enable an IPv6 GUA address to be a primary IPv6, you cannot disable it.
+  When you enable an IPv6 GUA address to be a primary IPv6, the first IPv6 GUA will be made
+  the primary IPv6 address until the instance is terminated or the network interface is
+  detached. If you have multiple IPv6 addresses associated with an ENI attached to your
+  instance and you enable a primary IPv6 address, the first IPv6 GUA address associated with
+  the ENI becomes the primary IPv6 address.
 - `"SecurityGroupId"`: Changes the security groups for the network interface. The new set
   of groups you specify replaces the current set. You must specify at least one group, even
   if it's just the default security group in the VPC. You must specify the ID of the security
@@ -25500,7 +25519,9 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   VXLAN header. To mirror a subset, set this to the length (in bytes) to mirror. For example,
   if you set this value to 100, then the first 100 bytes that meet the filter criteria are
   copied to the target. Do not specify this parameter when you want to mirror the entire
-  packet.
+  packet. For sessions with Network Load Balancer (NLB) traffic mirror targets, the default
+  PacketLength will be set to 8500. Valid values are 1-8500. Setting a PacketLength greater
+  than 8500 will result in an error response.
 - `"RemoveField"`: The properties that you want to remove from the Traffic Mirror session.
   When you remove a property from a Traffic Mirror session, the property is set to the
   default.
@@ -26527,25 +26548,17 @@ end
     modify_vpc_peering_connection_options(vpc_peering_connection_id)
     modify_vpc_peering_connection_options(vpc_peering_connection_id, params::Dict{String,<:Any})
 
- We are retiring EC2-Classic. We recommend that you migrate from EC2-Classic to a VPC. For
-more information, see Migrate from EC2-Classic to a VPC in the Amazon Elastic Compute Cloud
-User Guide.  Modifies the VPC peering connection options on one side of a VPC peering
-connection. You can do the following:   Enable/disable communication over the peering
-connection between an EC2-Classic instance that's linked to your VPC (using ClassicLink)
-and instances in the peer VPC.   Enable/disable communication over the peering connection
-between instances in your VPC and an EC2-Classic instance that's linked to the peer VPC.
-Enable/disable the ability to resolve public DNS hostnames to private IP addresses when
-queried from instances in the peer VPC.   If the peered VPCs are in the same Amazon Web
-Services account, you can enable DNS resolution for queries from the local VPC. This
-ensures that queries from the local VPC resolve to private IP addresses in the peer VPC.
-This option is not available if the peered VPCs are in different Amazon Web Services
-accounts or different Regions. For peered VPCs in different Amazon Web Services accounts,
-each Amazon Web Services account owner must initiate a separate request to modify the
-peering connection options. For inter-region peering connections, you must use the Region
-for the requester VPC to modify the requester VPC peering options and the Region for the
-accepter VPC to modify the accepter VPC peering options. To verify which VPCs are the
-accepter and the requester for a VPC peering connection, use the
-DescribeVpcPeeringConnections command.
+Modifies the VPC peering connection options on one side of a VPC peering connection. If the
+peered VPCs are in the same Amazon Web Services account, you can enable DNS resolution for
+queries from the local VPC. This ensures that queries from the local VPC resolve to private
+IP addresses in the peer VPC. This option is not available if the peered VPCs are in
+different Amazon Web Services accounts or different Regions. For peered VPCs in different
+Amazon Web Services accounts, each Amazon Web Services account owner must initiate a
+separate request to modify the peering connection options. For inter-region peering
+connections, you must use the Region for the requester VPC to modify the requester VPC
+peering options and the Region for the accepter VPC to modify the accepter VPC peering
+options. To verify which VPCs are the accepter and the requester for a VPC peering
+connection, use the DescribeVpcPeeringConnections command.
 
 # Arguments
 - `vpc_peering_connection_id`: The ID of the VPC peering connection.
@@ -26598,7 +26611,7 @@ tenancy attribute of a VPC to default only. You cannot change the instance tenan
 attribute to dedicated. After you modify the tenancy of the VPC, any new instances that you
 launch into the VPC have a tenancy of default, unless you specify otherwise during launch.
 The tenancy of any existing instances in the VPC is not affected. For more information, see
-Dedicated Instances in the Amazon Elastic Compute Cloud User Guide.
+Dedicated Instances in the Amazon EC2 User Guide.
 
 # Arguments
 - `instance_tenancy`: The instance tenancy attribute for the VPC.
@@ -28110,8 +28123,7 @@ end
 
 Changes which network ACL a subnet is associated with. By default when you create a subnet,
 it's automatically associated with the default network ACL. For more information, see
-Network ACLs in the Amazon Virtual Private Cloud User Guide. This is an idempotent
-operation.
+Network ACLs in the Amazon VPC User Guide. This is an idempotent operation.
 
 # Arguments
 - `association_id`: The ID of the current association between the original network ACL and
@@ -28161,7 +28173,7 @@ end
     replace_network_acl_entry(egress, network_acl_id, protocol, rule_action, rule_number, params::Dict{String,<:Any})
 
 Replaces an entry (rule) in a network ACL. For more information, see Network ACLs in the
-Amazon Virtual Private Cloud User Guide.
+Amazon VPC User Guide.
 
 # Arguments
 - `egress`: Indicates whether to replace the egress rule. Default: If no value is
@@ -28247,7 +28259,7 @@ end
 Replaces an existing route within a route table in a VPC. You must specify either a
 destination CIDR block or a prefix list ID. You must also specify exactly one of the
 resources from the parameter list, or reset the local route to its default target. For more
-information, see Route tables in the Amazon Virtual Private Cloud User Guide.
+information, see Route tables in the Amazon VPC User Guide.
 
 # Arguments
 - `route_table_id`: The ID of the route table.
@@ -28307,9 +28319,9 @@ end
 Changes the route table associated with a given subnet, internet gateway, or virtual
 private gateway in a VPC. After the operation completes, the subnet or gateway uses the
 routes in the new route table. For more information about route tables, see Route tables in
-the Amazon Virtual Private Cloud User Guide. You can also use this operation to change
-which table is the main route table in the VPC. Specify the main route table's association
-ID and the route table ID of the new main route table.
+the Amazon VPC User Guide. You can also use this operation to change which table is the
+main route table in the VPC. Specify the main route table's association ID and the route
+table ID of the new main route table.
 
 # Arguments
 - `association_id`: The association ID.
@@ -29278,19 +29290,19 @@ end
     revoke_security_group_egress(group_id)
     revoke_security_group_egress(group_id, params::Dict{String,<:Any})
 
-[VPC only] Removes the specified outbound (egress) rules from a security group for EC2-VPC.
-This action does not apply to security groups for use in EC2-Classic. You can specify rules
-using either rule IDs or security group rule properties. If you use rule properties, the
-values that you specify (for example, ports) must match the existing rule's values exactly.
-Each rule has a protocol, from and to ports, and destination (CIDR range, security group,
-or prefix list). For the TCP and UDP protocols, you must also specify the destination port
-or range of ports. For the ICMP protocol, you must also specify the ICMP type and code. If
-the security group rule has a description, you do not need to specify the description to
-revoke the rule. [Default VPC] If the values you specify do not match the existing rule's
-values, no error is returned, and the output describes the security group rules that were
-not revoked. Amazon Web Services recommends that you describe the security group to verify
-that the rules were removed. Rule changes are propagated to instances within the security
-group as quickly as possible. However, a small delay might occur.
+Removes the specified outbound (egress) rules from the specified security group. You can
+specify rules using either rule IDs or security group rule properties. If you use rule
+properties, the values that you specify (for example, ports) must match the existing rule's
+values exactly. Each rule has a protocol, from and to ports, and destination (CIDR range,
+security group, or prefix list). For the TCP and UDP protocols, you must also specify the
+destination port or range of ports. For the ICMP protocol, you must also specify the ICMP
+type and code. If the security group rule has a description, you do not need to specify the
+description to revoke the rule. For a default VPC, if the values you specify do not match
+the existing rule's values, no error is returned, and the output describes the security
+group rules that were not revoked. Amazon Web Services recommends that you describe the
+security group to verify that the rules were removed. Rule changes are propagated to
+instances within the security group as quickly as possible. However, a small delay might
+occur.
 
 # Arguments
 - `group_id`: The ID of the security group.
@@ -29345,13 +29357,11 @@ Each rule has a protocol, from and to ports, and source (CIDR range, security gr
 prefix list). For the TCP and UDP protocols, you must also specify the destination port or
 range of ports. For the ICMP protocol, you must also specify the ICMP type and code. If the
 security group rule has a description, you do not need to specify the description to revoke
-the rule. [EC2-Classic, default VPC] If the values you specify do not match the existing
-rule's values, no error is returned, and the output describes the security group rules that
-were not revoked. Amazon Web Services recommends that you describe the security group to
-verify that the rules were removed. Rule changes are propagated to instances within the
-security group as quickly as possible. However, a small delay might occur.  We are retiring
-EC2-Classic. We recommend that you migrate from EC2-Classic to a VPC. For more information,
-see Migrate from EC2-Classic to a VPC in the Amazon Elastic Compute Cloud User Guide.
+the rule. For a default VPC, if the values you specify do not match the existing rule's
+values, no error is returned, and the output describes the security group rules that were
+not revoked. Amazon Web Services recommends that you describe the security group to verify
+that the rules were removed. Rule changes are propagated to instances within the security
+group as quickly as possible. However, a small delay might occur.
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
@@ -29359,28 +29369,21 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   source security group.
 - `"FromPort"`: If the protocol is TCP or UDP, this is the start of the port range. If the
   protocol is ICMP, this is the type number. A value of -1 indicates all ICMP types.
-- `"GroupId"`: The ID of the security group. You must specify either the security group ID
-  or the security group name in the request. For security groups in a nondefault VPC, you
-  must specify the security group ID.
-- `"GroupName"`: [EC2-Classic, default VPC] The name of the security group. You must
-  specify either the security group ID or the security group name in the request. For
-  security groups in a nondefault VPC, you must specify the security group ID.
+- `"GroupId"`: The ID of the security group.
+- `"GroupName"`: [Default VPC] The name of the security group. You must specify either the
+  security group ID or the security group name in the request. For security groups in a
+  nondefault VPC, you must specify the security group ID.
 - `"IpPermissions"`: The sets of IP permissions. You can't specify a source security group
   and a CIDR IP address range in the same set of permissions.
 - `"IpProtocol"`: The IP protocol name (tcp, udp, icmp) or number (see Protocol Numbers).
   Use -1 to specify all.
 - `"SecurityGroupRuleId"`: The IDs of the security group rules.
-- `"SourceSecurityGroupName"`: [EC2-Classic, default VPC] The name of the source security
-  group. You can't specify this parameter in combination with the following parameters: the
-  CIDR IP address range, the start of the port range, the IP protocol, and the end of the
-  port range. For EC2-VPC, the source security group must be in the same VPC. To revoke a
-  specific rule for an IP protocol and port range, use a set of IP permissions instead.
-- `"SourceSecurityGroupOwnerId"`: [EC2-Classic] The Amazon Web Services account ID of the
-  source security group, if the source security group is in a different account. You can't
-  specify this parameter in combination with the following parameters: the CIDR IP address
-  range, the IP protocol, the start of the port range, and the end of the port range. To
-  revoke a specific rule for an IP protocol and port range, use a set of IP permissions
-  instead.
+- `"SourceSecurityGroupName"`: [Default VPC] The name of the source security group. You
+  can't specify this parameter in combination with the following parameters: the CIDR IP
+  address range, the start of the port range, the IP protocol, and the end of the port range.
+  The source security group must be in the same VPC. To revoke a specific rule for an IP
+  protocol and port range, use a set of IP permissions instead.
+- `"SourceSecurityGroupOwnerId"`: Not supported.
 - `"ToPort"`: If the protocol is TCP or UDP, this is the end of the port range. If the
   protocol is ICMP, this is the code. A value of -1 indicates all ICMP codes.
 - `"dryRun"`: Checks whether you have the required permissions for the action, without
@@ -29475,20 +29478,33 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   Amazon EI accelerators in Amazon SageMaker, Amazon ECS, or Amazon EC2. However, customers
   who have used Amazon EI at least once during the past 30-day period are considered current
   customers and will be able to continue using the service.
+- `"EnablePrimaryIpv6"`: If you’re launching an instance into a dual-stack or IPv6-only
+  subnet, you can enable assigning a primary IPv6 address. A primary IPv6 address is an IPv6
+  GUA address associated with an ENI that you have enabled to use a primary IPv6 address. Use
+  this option if an instance relies on its IPv6 address not changing. When you launch the
+  instance, Amazon Web Services will automatically assign an IPv6 address associated with the
+  ENI attached to your instance to be the primary IPv6 address. Once you enable an IPv6 GUA
+  address to be a primary IPv6, you cannot disable it. When you enable an IPv6 GUA address to
+  be a primary IPv6, the first IPv6 GUA will be made the primary IPv6 address until the
+  instance is terminated or the network interface is detached. If you have multiple IPv6
+  addresses associated with an ENI attached to your instance and you enable a primary IPv6
+  address, the first IPv6 GUA address associated with the ENI becomes the primary IPv6
+  address.
 - `"EnclaveOptions"`: Indicates whether the instance is enabled for Amazon Web Services
-  Nitro Enclaves. For more information, see  What is Amazon Web Services Nitro Enclaves? in
+  Nitro Enclaves. For more information, see What is Amazon Web Services Nitro Enclaves? in
   the Amazon Web Services Nitro Enclaves User Guide. You can't enable Amazon Web Services
   Nitro Enclaves and hibernation on the same instance.
-- `"HibernationOptions"`: Indicates whether an instance is enabled for hibernation. For
-  more information, see Hibernate your instance in the Amazon EC2 User Guide. You can't
-  enable hibernation and Amazon Web Services Nitro Enclaves on the same instance.
+- `"HibernationOptions"`: Indicates whether an instance is enabled for hibernation. This
+  parameter is valid only if the instance meets the hibernation prerequisites. For more
+  information, see Hibernate your instance in the Amazon EC2 User Guide. You can't enable
+  hibernation and Amazon Web Services Nitro Enclaves on the same instance.
 - `"ImageId"`: The ID of the AMI. An AMI ID is required to launch an instance and must be
   specified here or in a launch template.
 - `"InstanceMarketOptions"`: The market (purchasing) option for the instances. For
   RunInstances, persistent Spot Instance requests are only supported when
   InstanceInterruptionBehavior is set to either hibernate or stop.
 - `"InstanceType"`: The instance type. For more information, see Instance types in the
-  Amazon EC2 User Guide. Default: m1.small
+  Amazon EC2 User Guide.
 - `"Ipv6Address"`: The IPv6 addresses from the range of the subnet to associate with the
   primary network interface. You cannot specify this option and the option to assign a number
   of IPv6 addresses in the same request. You cannot specify this option if you've specified a
@@ -29514,7 +29530,8 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
 - `"Monitoring"`: Specifies whether detailed monitoring is enabled for the instance.
 - `"Placement"`: The placement for the instance.
 - `"PrivateDnsNameOptions"`: The options for the instance hostname. The default values are
-  inherited from the subnet.
+  inherited from the subnet. Applies only if creating a network interface, not attaching an
+  existing one.
 - `"RamdiskId"`: The ID of the RAM disk to select. Some kernels require additional drivers
   at launch. Check the kernel requirements for information about whether you need to specify
   a RAM disk. To find kernel requirements, go to the Amazon Web Services Resource Center and
@@ -30383,16 +30400,16 @@ end
 
 Unassigns secondary private IPv4 addresses from a private NAT gateway. You cannot unassign
 your primary private IP. For more information, see Edit secondary IP address associations
-in the Amazon Virtual Private Cloud User Guide. While unassigning is in progress, you
-cannot assign/unassign additional IP addresses while the connections are being drained. You
-are, however, allowed to delete the NAT gateway. A private IP address will only be released
-at the end of MaxDrainDurationSeconds. The private IP addresses stay associated and support
-the existing connections but do not support any new connections (new connections are
-distributed across the remaining assigned private IP address). After the existing
-connections drain out, the private IP addresses get released.
+in the Amazon VPC User Guide. While unassigning is in progress, you cannot assign/unassign
+additional IP addresses while the connections are being drained. You are, however, allowed
+to delete the NAT gateway. A private IP address will only be released at the end of
+MaxDrainDurationSeconds. The private IP addresses stay associated and support the existing
+connections, but do not support any new connections (new connections are distributed across
+the remaining assigned private IP address). After the existing connections drain out, the
+private IP addresses are released.
 
 # Arguments
-- `nat_gateway_id`: The NAT gateway ID.
+- `nat_gateway_id`: The ID of the NAT gateway.
 - `private_ip_address`: The private IPv4 addresses you want to unassign.
 
 # Optional Parameters
@@ -30481,10 +30498,10 @@ end
     update_security_group_rule_descriptions_egress()
     update_security_group_rule_descriptions_egress(params::Dict{String,<:Any})
 
-[VPC only] Updates the description of an egress (outbound) security group rule. You can
-replace an existing description, or add a description to a rule that did not have one
-previously. You can remove a description for a security group rule by omitting the
-description parameter in the request.
+Updates the description of an egress (outbound) security group rule. You can replace an
+existing description, or add a description to a rule that did not have one previously. You
+can remove a description for a security group rule by omitting the description parameter in
+the request.
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
@@ -30495,7 +30512,7 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   or the security group name in the request. For security groups in a nondefault VPC, you
   must specify the security group ID.
 - `"GroupName"`: [Default VPC] The name of the security group. You must specify either the
-  security group ID or the security group name in the request.
+  security group ID or the security group name.
 - `"IpPermissions"`: The IP permissions for the security group rule. You must specify
   either the IP permissions or the description.
 - `"SecurityGroupRuleDescription"`: The description for the egress security group rules.
@@ -30538,13 +30555,13 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
 - `"GroupId"`: The ID of the security group. You must specify either the security group ID
   or the security group name in the request. For security groups in a nondefault VPC, you
   must specify the security group ID.
-- `"GroupName"`: [EC2-Classic, default VPC] The name of the security group. You must
-  specify either the security group ID or the security group name in the request. For
-  security groups in a nondefault VPC, you must specify the security group ID.
+- `"GroupName"`: [Default VPC] The name of the security group. You must specify either the
+  security group ID or the security group name. For security groups in a nondefault VPC, you
+  must specify the security group ID.
 - `"IpPermissions"`: The IP permissions for the security group rule. You must specify
   either IP permissions or a description.
-- `"SecurityGroupRuleDescription"`: [VPC only] The description for the ingress security
-  group rules. You must specify either a description or IP permissions.
+- `"SecurityGroupRuleDescription"`: The description for the ingress security group rules.
+  You must specify either a description or IP permissions.
 """
 function update_security_group_rule_descriptions_ingress(;
     aws_config::AbstractAWSConfig=global_aws_config()

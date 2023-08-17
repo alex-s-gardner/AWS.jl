@@ -860,12 +860,12 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   supplied during certificate issuance, Amazon Web Services Private CA applies order of
   operation rules to determine what information is used.
 - `"IdempotencyToken"`: Alphanumeric string that can be used to distinguish between calls
-  to the IssueCertificate action. Idempotency tokens for IssueCertificate time out after one
-  minute. Therefore, if you call IssueCertificate multiple times with the same idempotency
-  token within one minute, Amazon Web Services Private CA recognizes that you are requesting
-  only one certificate and will issue only one. If you change the idempotency token for each
-  call, Amazon Web Services Private CA recognizes that you are requesting multiple
-  certificates.
+  to the IssueCertificate action. Idempotency tokens for IssueCertificate time out after five
+  minutes. Therefore, if you call IssueCertificate multiple times with the same idempotency
+  token within five minutes, Amazon Web Services Private CA recognizes that you are
+  requesting only one certificate and will issue only one. If you change the idempotency
+  token for each call, Amazon Web Services Private CA recognizes that you are requesting
+  multiple certificates.
 - `"TemplateArn"`: Specifies a custom configuration template to use when issuing a
   certificate. If this parameter is not provided, Amazon Web Services Private CA defaults to
   the EndEntityCertificate/V1 template. For CA certificates, you should choose the shortest

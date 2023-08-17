@@ -320,6 +320,78 @@ function create_legal_hold(
 end
 
 """
+    create_logically_air_gapped_backup_vault(max_retention_days, min_retention_days, backup_vault_name)
+    create_logically_air_gapped_backup_vault(max_retention_days, min_retention_days, backup_vault_name, params::Dict{String,<:Any})
+
+This request creates a logical container where backups are stored. This request includes a
+name, optionally one or more resource tags, an encryption key, and a request ID.  Do not
+include sensitive data, such as passport numbers, in the name of a backup vault.
+
+# Arguments
+- `max_retention_days`: This is the setting that specifies the maximum retention period
+  that the vault retains its recovery points. If this parameter is not specified, Backup does
+  not enforce a maximum retention period on the recovery points in the vault (allowing
+  indefinite storage). If specified, any backup or copy job to the vault must have a
+  lifecycle policy with a retention period equal to or shorter than the maximum retention
+  period. If the job retention period is longer than that maximum retention period, then the
+  vault fails the backup or copy job, and you should either modify your lifecycle settings or
+  use a different vault.
+- `min_retention_days`: This setting specifies the minimum retention period that the vault
+  retains its recovery points. If this parameter is not specified, no minimum retention
+  period is enforced. If specified, any backup or copy job to the vault must have a lifecycle
+  policy with a retention period equal to or longer than the minimum retention period. If a
+  job retention period is shorter than that minimum retention period, then the vault fails
+  the backup or copy job, and you should either modify your lifecycle settings or use a
+  different vault.
+- `backup_vault_name`: This is the name of the vault that is being created.
+
+# Optional Parameters
+Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"BackupVaultTags"`: These are the tags that will be included in the newly-created vault.
+- `"CreatorRequestId"`: This is the ID of the creation request.
+"""
+function create_logically_air_gapped_backup_vault(
+    MaxRetentionDays,
+    MinRetentionDays,
+    backupVaultName;
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return backup(
+        "PUT",
+        "/logically-air-gapped-backup-vaults/$(backupVaultName)",
+        Dict{String,Any}(
+            "MaxRetentionDays" => MaxRetentionDays, "MinRetentionDays" => MinRetentionDays
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function create_logically_air_gapped_backup_vault(
+    MaxRetentionDays,
+    MinRetentionDays,
+    backupVaultName,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return backup(
+        "PUT",
+        "/logically-air-gapped-backup-vaults/$(backupVaultName)",
+        Dict{String,Any}(
+            mergewith(
+                _merge,
+                Dict{String,Any}(
+                    "MaxRetentionDays" => MaxRetentionDays,
+                    "MinRetentionDays" => MinRetentionDays,
+                ),
+                params,
+            ),
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
     create_report_plan(report_delivery_channel, report_plan_name, report_setting)
     create_report_plan(report_delivery_channel, report_plan_name, report_setting, params::Dict{String,<:Any})
 
@@ -774,6 +846,9 @@ Returns metadata about a backup vault specified by its name.
   Amazon Web Services Region where they are created. They consist of lowercase letters,
   numbers, and hyphens.
 
+# Optional Parameters
+Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"backupVaultAccountId"`: This is the account ID of the specified backup vault.
 """
 function describe_backup_vault(
     backupVaultName; aws_config::AbstractAWSConfig=global_aws_config()
@@ -943,6 +1018,9 @@ lifecycle.
   point; for example,
   arn:aws:backup:us-east-1:123456789012:recovery-point:1EB3B5E7-9EB0-435A-A80B-108B488B0D45.
 
+# Optional Parameters
+Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"backupVaultAccountId"`: This is the account ID of the specified backup vault.
 """
 function describe_recovery_point(
     backupVaultName, recoveryPointArn; aws_config::AbstractAWSConfig=global_aws_config()
@@ -1487,6 +1565,9 @@ Returns a set of metadata key-value pairs that were used to create the backup.
   point; for example,
   arn:aws:backup:us-east-1:123456789012:recovery-point:1EB3B5E7-9EB0-435A-A80B-108B488B0D45.
 
+# Optional Parameters
+Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"backupVaultAccountId"`: This is the account ID of the specified backup vault.
 """
 function get_recovery_point_restore_metadata(
     backupVaultName, recoveryPointArn; aws_config::AbstractAWSConfig=global_aws_config()
@@ -1756,6 +1837,8 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
 - `"nextToken"`: The next item following a partial list of returned items. For example, if
   a request is made to return maxResults number of items, NextToken allows you to return more
   items in your list starting at the location pointed to by the next token.
+- `"shared"`: This parameter will sort the list of vaults by shared vaults.
+- `"vaultType"`: This parameter will sort the list of vaults by vault type.
 """
 function list_backup_vaults(; aws_config::AbstractAWSConfig=global_aws_config())
     return backup(
@@ -1910,6 +1993,49 @@ function list_protected_resources(
 end
 
 """
+    list_protected_resources_by_backup_vault(backup_vault_name)
+    list_protected_resources_by_backup_vault(backup_vault_name, params::Dict{String,<:Any})
+
+This request lists the protected resources corresponding to each backup vault.
+
+# Arguments
+- `backup_vault_name`: This is the list of protected resources by backup vault within the
+  vault(s) you specify by name.
+
+# Optional Parameters
+Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"backupVaultAccountId"`: This is the list of protected resources by backup vault within
+  the vault(s) you specify by account ID.
+- `"maxResults"`: The maximum number of items to be returned.
+- `"nextToken"`: The next item following a partial list of returned items. For example, if
+  a request is made to return maxResults number of items, NextToken allows you to return more
+  items in your list starting at the location pointed to by the next token.
+"""
+function list_protected_resources_by_backup_vault(
+    backupVaultName; aws_config::AbstractAWSConfig=global_aws_config()
+)
+    return backup(
+        "GET",
+        "/backup-vaults/$(backupVaultName)/resources/";
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function list_protected_resources_by_backup_vault(
+    backupVaultName,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return backup(
+        "GET",
+        "/backup-vaults/$(backupVaultName)/resources/",
+        params;
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
     list_recovery_points_by_backup_vault(backup_vault_name)
     list_recovery_points_by_backup_vault(backup_vault_name, params::Dict{String,<:Any})
 
@@ -1925,6 +2051,8 @@ Returns detailed information about the recovery points stored in a backup vault.
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
 - `"backupPlanId"`: Returns only recovery points that match the specified backup plan ID.
+- `"backupVaultAccountId"`: This parameter will sort the list of recovery points by account
+  ID.
 - `"createdAfter"`: Returns only recovery points that were created after the specified
   timestamp.
 - `"createdBefore"`: Returns only recovery points that were created before the specified
@@ -2410,7 +2538,8 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
 - `"CompleteWindowMinutes"`: A value in minutes during which a successfully started backup
   must complete, or else Backup will cancel the job. This value is optional. This value
   begins counting down from when the backup was scheduled. It does not add additional time
-  for StartWindowMinutes, or if the backup started later than scheduled.
+  for StartWindowMinutes, or if the backup started later than scheduled. Like
+  StartWindowMinutes, this parameter has a maximum value of 100 years (52,560,000 minutes).
 - `"IdempotencyToken"`: A customer-chosen string that you can use to distinguish between
   otherwise identical calls to StartBackupJob. Retrying a successful request with the same
   idempotency token results in a success message with no action taken.
@@ -2422,18 +2551,20 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   “transition to cold after days” setting cannot be changed after a backup has been
   transitioned to cold.  Resource types that are able to be transitioned to cold storage are
   listed in the \"Lifecycle to cold storage\" section of the  Feature availability by
-  resource table. Backup ignores this expression for other resource types.
+  resource table. Backup ignores this expression for other resource types. This parameter has
+  a maximum value of 100 years (36,500 days).
 - `"RecoveryPointTags"`: To help organize your resources, you can assign your own metadata
   to the resources that you create. Each tag is a key-value pair.
 - `"StartWindowMinutes"`: A value in minutes after a backup is scheduled before a job will
   be canceled if it doesn't start successfully. This value is optional, and the default is 8
-  hours. If this value is included, it must be at least 60 minutes to avoid errors. During
-  the start window, the backup job status remains in CREATED status until it has successfully
-  begun or until the start window time has run out. If within the start window time Backup
-  receives an error that allows the job to be retried, Backup will automatically retry to
-  begin the job at least every 10 minutes until the backup successfully begins (the job
-  status changes to RUNNING) or until the job status changes to EXPIRED (which is expected to
-  occur when the start window time is over).
+  hours. If this value is included, it must be at least 60 minutes to avoid errors. This
+  parameter has a maximum value of 100 years (52,560,000 minutes). During the start window,
+  the backup job status remains in CREATED status until it has successfully begun or until
+  the start window time has run out. If within the start window time Backup receives an error
+  that allows the job to be retried, Backup will automatically retry to begin the job at
+  least every 10 minutes until the backup successfully begins (the job status changes to
+  RUNNING) or until the job status changes to EXPIRED (which is expected to occur when the
+  start window time is over).
 """
 function start_backup_job(
     BackupVaultName,

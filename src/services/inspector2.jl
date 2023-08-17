@@ -72,6 +72,82 @@ function batch_get_account_status(
 end
 
 """
+    batch_get_code_snippet(finding_arns)
+    batch_get_code_snippet(finding_arns, params::Dict{String,<:Any})
+
+Retrieves code snippets from findings that Amazon Inspector detected code vulnerabilities
+in.
+
+# Arguments
+- `finding_arns`: An array of finding ARNs for the findings you want to retrieve code
+  snippets from.
+
+"""
+function batch_get_code_snippet(
+    findingArns; aws_config::AbstractAWSConfig=global_aws_config()
+)
+    return inspector2(
+        "POST",
+        "/codesnippet/batchget",
+        Dict{String,Any}("findingArns" => findingArns);
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function batch_get_code_snippet(
+    findingArns,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return inspector2(
+        "POST",
+        "/codesnippet/batchget",
+        Dict{String,Any}(
+            mergewith(_merge, Dict{String,Any}("findingArns" => findingArns), params)
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
+    batch_get_finding_details(finding_arns)
+    batch_get_finding_details(finding_arns, params::Dict{String,<:Any})
+
+Gets vulnerability details for findings.
+
+# Arguments
+- `finding_arns`: A list of finding ARNs.
+
+"""
+function batch_get_finding_details(
+    findingArns; aws_config::AbstractAWSConfig=global_aws_config()
+)
+    return inspector2(
+        "POST",
+        "/findings/details/batch/get",
+        Dict{String,Any}("findingArns" => findingArns);
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function batch_get_finding_details(
+    findingArns,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return inspector2(
+        "POST",
+        "/findings/details/batch/get",
+        Dict{String,Any}(
+            mergewith(_merge, Dict{String,Any}("findingArns" => findingArns), params)
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
     batch_get_free_trial_info(account_ids)
     batch_get_free_trial_info(account_ids, params::Dict{String,<:Any})
 
@@ -219,6 +295,41 @@ function cancel_findings_report(
 end
 
 """
+    cancel_sbom_export(report_id)
+    cancel_sbom_export(report_id, params::Dict{String,<:Any})
+
+Cancels a software bill of materials (SBOM) report.
+
+# Arguments
+- `report_id`: The report ID of the SBOM export to cancel.
+
+"""
+function cancel_sbom_export(reportId; aws_config::AbstractAWSConfig=global_aws_config())
+    return inspector2(
+        "POST",
+        "/sbomexport/cancel",
+        Dict{String,Any}("reportId" => reportId);
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function cancel_sbom_export(
+    reportId,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return inspector2(
+        "POST",
+        "/sbomexport/cancel",
+        Dict{String,Any}(
+            mergewith(_merge, Dict{String,Any}("reportId" => reportId), params)
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
     create_filter(action, filter_criteria, name)
     create_filter(action, filter_criteria, name, params::Dict{String,<:Any})
 
@@ -310,6 +421,55 @@ function create_findings_report(
     return inspector2(
         "POST",
         "/reporting/create",
+        Dict{String,Any}(
+            mergewith(
+                _merge,
+                Dict{String,Any}(
+                    "reportFormat" => reportFormat, "s3Destination" => s3Destination
+                ),
+                params,
+            ),
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
+    create_sbom_export(report_format, s3_destination)
+    create_sbom_export(report_format, s3_destination, params::Dict{String,<:Any})
+
+Creates a software bill of materials (SBOM) report.
+
+# Arguments
+- `report_format`: The output format for the software bill of materials (SBOM) report.
+- `s3_destination`:
+
+# Optional Parameters
+Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"resourceFilterCriteria"`: The resource filter criteria for the software bill of
+  materials (SBOM) report.
+"""
+function create_sbom_export(
+    reportFormat, s3Destination; aws_config::AbstractAWSConfig=global_aws_config()
+)
+    return inspector2(
+        "POST",
+        "/sbomexport/create",
+        Dict{String,Any}("reportFormat" => reportFormat, "s3Destination" => s3Destination);
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function create_sbom_export(
+    reportFormat,
+    s3Destination,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return inspector2(
+        "POST",
+        "/sbomexport/create",
         Dict{String,Any}(
             mergewith(
                 _merge,
@@ -667,6 +827,49 @@ function get_ec2_deep_inspection_configuration(
 end
 
 """
+    get_encryption_key(resource_type, scan_type)
+    get_encryption_key(resource_type, scan_type, params::Dict{String,<:Any})
+
+Gets an encryption key.
+
+# Arguments
+- `resource_type`: The resource type the key encrypts.
+- `scan_type`: The scan type the key encrypts.
+
+"""
+function get_encryption_key(
+    resourceType, scanType; aws_config::AbstractAWSConfig=global_aws_config()
+)
+    return inspector2(
+        "GET",
+        "/encryptionkey/get",
+        Dict{String,Any}("resourceType" => resourceType, "scanType" => scanType);
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function get_encryption_key(
+    resourceType,
+    scanType,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return inspector2(
+        "GET",
+        "/encryptionkey/get",
+        Dict{String,Any}(
+            mergewith(
+                _merge,
+                Dict{String,Any}("resourceType" => resourceType, "scanType" => scanType),
+                params,
+            ),
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
     get_findings_report_status()
     get_findings_report_status(params::Dict{String,<:Any})
 
@@ -726,6 +929,41 @@ function get_member(
         "/members/get",
         Dict{String,Any}(
             mergewith(_merge, Dict{String,Any}("accountId" => accountId), params)
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
+    get_sbom_export(report_id)
+    get_sbom_export(report_id, params::Dict{String,<:Any})
+
+Gets details of a software bill of materials (SBOM) report.
+
+# Arguments
+- `report_id`: The report ID of the SBOM export to get details for.
+
+"""
+function get_sbom_export(reportId; aws_config::AbstractAWSConfig=global_aws_config())
+    return inspector2(
+        "POST",
+        "/sbomexport/get",
+        Dict{String,Any}("reportId" => reportId);
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function get_sbom_export(
+    reportId,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return inspector2(
+        "POST",
+        "/sbomexport/get",
+        Dict{String,Any}(
+            mergewith(_merge, Dict{String,Any}("reportId" => reportId), params)
         );
         aws_config=aws_config,
         feature_set=SERVICE_FEATURE_SET,
@@ -1087,6 +1325,50 @@ function list_usage_totals(
 end
 
 """
+    reset_encryption_key(resource_type, scan_type)
+    reset_encryption_key(resource_type, scan_type, params::Dict{String,<:Any})
+
+Resets an encryption key. After the key is reset your resources will be encrypted by an
+Amazon Web Services owned key.
+
+# Arguments
+- `resource_type`: The resource type the key encrypts.
+- `scan_type`: The scan type the key encrypts.
+
+"""
+function reset_encryption_key(
+    resourceType, scanType; aws_config::AbstractAWSConfig=global_aws_config()
+)
+    return inspector2(
+        "PUT",
+        "/encryptionkey/reset",
+        Dict{String,Any}("resourceType" => resourceType, "scanType" => scanType);
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function reset_encryption_key(
+    resourceType,
+    scanType,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return inspector2(
+        "PUT",
+        "/encryptionkey/reset",
+        Dict{String,Any}(
+            mergewith(
+                _merge,
+                Dict{String,Any}("resourceType" => resourceType, "scanType" => scanType),
+                params,
+            ),
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
     search_vulnerabilities(filter_criteria)
     search_vulnerabilities(filter_criteria, params::Dict{String,<:Any})
 
@@ -1276,6 +1558,58 @@ function update_ec2_deep_inspection_configuration(
         "POST",
         "/ec2deepinspectionconfiguration/update",
         params;
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
+    update_encryption_key(kms_key_id, resource_type, scan_type)
+    update_encryption_key(kms_key_id, resource_type, scan_type, params::Dict{String,<:Any})
+
+Updates an encryption key. A ResourceNotFoundException means that an AWS owned key is being
+used for encryption.
+
+# Arguments
+- `kms_key_id`: A KMS key ID for the encryption key.
+- `resource_type`: The resource type for the encryption key.
+- `scan_type`: The scan type for the encryption key.
+
+"""
+function update_encryption_key(
+    kmsKeyId, resourceType, scanType; aws_config::AbstractAWSConfig=global_aws_config()
+)
+    return inspector2(
+        "PUT",
+        "/encryptionkey/update",
+        Dict{String,Any}(
+            "kmsKeyId" => kmsKeyId, "resourceType" => resourceType, "scanType" => scanType
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function update_encryption_key(
+    kmsKeyId,
+    resourceType,
+    scanType,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return inspector2(
+        "PUT",
+        "/encryptionkey/update",
+        Dict{String,Any}(
+            mergewith(
+                _merge,
+                Dict{String,Any}(
+                    "kmsKeyId" => kmsKeyId,
+                    "resourceType" => resourceType,
+                    "scanType" => scanType,
+                ),
+                params,
+            ),
+        );
         aws_config=aws_config,
         feature_set=SERVICE_FEATURE_SET,
     )

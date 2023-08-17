@@ -874,7 +874,7 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
 - `"performHPO"`: Whether to perform hyperparameter optimization (HPO) on the specified or
   selected recipe. The default is false. When performing AutoML, this parameter is always
   true and you should not set it to false.
-- `"recipeArn"`: The ARN of the recipe to use for model training. Only specified when
+- `"recipeArn"`: The ARN of the recipe to use for model training. This is required when
   performAutoML is false.
 - `"solutionConfig"`: The configuration to use with the solution. When performAutoML is set
   to true, Amazon Personalize only evaluates the autoMLConfig section of the solution
@@ -2724,6 +2724,48 @@ function update_campaign(
         "UpdateCampaign",
         Dict{String,Any}(
             mergewith(_merge, Dict{String,Any}("campaignArn" => campaignArn), params)
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
+    update_dataset(dataset_arn, schema_arn)
+    update_dataset(dataset_arn, schema_arn, params::Dict{String,<:Any})
+
+Update a dataset to replace its schema with a new or existing one. For more information,
+see Replacing a dataset's schema.
+
+# Arguments
+- `dataset_arn`: The Amazon Resource Name (ARN) of the dataset that you want to update.
+- `schema_arn`: The Amazon Resource Name (ARN) of the new schema you want use.
+
+"""
+function update_dataset(
+    datasetArn, schemaArn; aws_config::AbstractAWSConfig=global_aws_config()
+)
+    return personalize(
+        "UpdateDataset",
+        Dict{String,Any}("datasetArn" => datasetArn, "schemaArn" => schemaArn);
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function update_dataset(
+    datasetArn,
+    schemaArn,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return personalize(
+        "UpdateDataset",
+        Dict{String,Any}(
+            mergewith(
+                _merge,
+                Dict{String,Any}("datasetArn" => datasetArn, "schemaArn" => schemaArn),
+                params,
+            ),
         );
         aws_config=aws_config,
         feature_set=SERVICE_FEATURE_SET,

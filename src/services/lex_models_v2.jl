@@ -2706,6 +2706,262 @@ function list_imports(
 end
 
 """
+    list_intent_metrics(bot_id, end_date_time, metrics, start_date_time)
+    list_intent_metrics(bot_id, end_date_time, metrics, start_date_time, params::Dict{String,<:Any})
+
+Retrieves summary metrics for the intents in your bot. The following fields are required:
+ metrics – A list of AnalyticsIntentMetric objects. In each object, use the name field to
+specify the metric to calculate, the statistic field to specify whether to calculate the
+Sum, Average, or Max number, and the order field to specify whether to sort the results in
+Ascending or Descending order.    startDateTime and endDateTime – Define a time range for
+which you want to retrieve results.   Of the optional fields, you can organize the results
+in the following ways:   Use the filters field to filter the results, the groupBy field to
+specify categories by which to group the results, and the binBy field to specify time
+intervals by which to group the results.   Use the maxResults field to limit the number of
+results to return in a single response and the nextToken field to return the next batch of
+results if the response does not return the full set of results.   Note that an order field
+exists in both binBy and metrics. You can specify only one order in a given request.
+
+# Arguments
+- `bot_id`: The identifier for the bot for which you want to retrieve intent metrics.
+- `end_date_time`: The date and time that marks the end of the range of time for which you
+  want to see intent metrics.
+- `metrics`: A list of objects, each of which contains a metric you want to list, the
+  statistic for the metric you want to return, and the order by which to organize the results.
+- `start_date_time`: The timestamp that marks the beginning of the range of time for which
+  you want to see intent metrics.
+
+# Optional Parameters
+Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"binBy"`: A list of objects, each of which contains specifications for organizing the
+  results by time.
+- `"filters"`: A list of objects, each of which describes a condition by which you want to
+  filter the results.
+- `"groupBy"`: A list of objects, each of which specifies how to group the results. You can
+  group by the following criteria:    IntentName – The name of the intent.
+  IntentEndState – The final state of the intent. The possible end states are detailed in
+  Key definitions in the user guide.
+- `"maxResults"`: The maximum number of results to return in each page of results. If there
+  are fewer results than the maximum page size, only the actual number of results are
+  returned.
+- `"nextToken"`: If the response from the ListIntentMetrics operation contains more results
+  than specified in the maxResults parameter, a token is returned in the response. Use the
+  returned token in the nextToken parameter of a ListIntentMetrics request to return the next
+  page of results. For a complete set of results, call the ListIntentMetrics operation until
+  the nextToken returned in the response is null.
+"""
+function list_intent_metrics(
+    botId,
+    endDateTime,
+    metrics,
+    startDateTime;
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return lex_models_v2(
+        "POST",
+        "/bots/$(botId)/analytics/intentmetrics",
+        Dict{String,Any}(
+            "endDateTime" => endDateTime,
+            "metrics" => metrics,
+            "startDateTime" => startDateTime,
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function list_intent_metrics(
+    botId,
+    endDateTime,
+    metrics,
+    startDateTime,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return lex_models_v2(
+        "POST",
+        "/bots/$(botId)/analytics/intentmetrics",
+        Dict{String,Any}(
+            mergewith(
+                _merge,
+                Dict{String,Any}(
+                    "endDateTime" => endDateTime,
+                    "metrics" => metrics,
+                    "startDateTime" => startDateTime,
+                ),
+                params,
+            ),
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
+    list_intent_paths(bot_id, end_date_time, intent_path, start_date_time)
+    list_intent_paths(bot_id, end_date_time, intent_path, start_date_time, params::Dict{String,<:Any})
+
+Retrieves summary statistics for a path of intents that users take over sessions with your
+bot. The following fields are required:    startDateTime and endDateTime – Define a time
+range for which you want to retrieve results.    intentPath – Define an order of intents
+for which you want to retrieve metrics. Separate intents in the path with a forward slash.
+For example, populate the intentPath field with /BookCar/BookHotel to see details about how
+many times users invoked the BookCar and BookHotel intents in that order.   Use the
+optional filters field to filter the results.
+
+# Arguments
+- `bot_id`: The identifier for the bot for which you want to retrieve intent path metrics.
+- `end_date_time`: The date and time that marks the end of the range of time for which you
+  want to see intent path metrics.
+- `intent_path`: The intent path for which you want to retrieve metrics. Use a forward
+  slash to separate intents in the path. For example:   /BookCar   /BookCar/BookHotel
+  /BookHotel/BookCar
+- `start_date_time`: The date and time that marks the beginning of the range of time for
+  which you want to see intent path metrics.
+
+# Optional Parameters
+Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"filters"`: A list of objects, each describes a condition by which you want to filter
+  the results.
+"""
+function list_intent_paths(
+    botId,
+    endDateTime,
+    intentPath,
+    startDateTime;
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return lex_models_v2(
+        "POST",
+        "/bots/$(botId)/analytics/intentpaths",
+        Dict{String,Any}(
+            "endDateTime" => endDateTime,
+            "intentPath" => intentPath,
+            "startDateTime" => startDateTime,
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function list_intent_paths(
+    botId,
+    endDateTime,
+    intentPath,
+    startDateTime,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return lex_models_v2(
+        "POST",
+        "/bots/$(botId)/analytics/intentpaths",
+        Dict{String,Any}(
+            mergewith(
+                _merge,
+                Dict{String,Any}(
+                    "endDateTime" => endDateTime,
+                    "intentPath" => intentPath,
+                    "startDateTime" => startDateTime,
+                ),
+                params,
+            ),
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
+    list_intent_stage_metrics(bot_id, end_date_time, metrics, start_date_time)
+    list_intent_stage_metrics(bot_id, end_date_time, metrics, start_date_time, params::Dict{String,<:Any})
+
+Retrieves summary metrics for the stages within intents in your bot. The following fields
+are required:    metrics – A list of AnalyticsIntentStageMetric objects. In each object,
+use the name field to specify the metric to calculate, the statistic field to specify
+whether to calculate the Sum, Average, or Max number, and the order field to specify
+whether to sort the results in Ascending or Descending order.    startDateTime and
+endDateTime – Define a time range for which you want to retrieve results.   Of the
+optional fields, you can organize the results in the following ways:   Use the filters
+field to filter the results, the groupBy field to specify categories by which to group the
+results, and the binBy field to specify time intervals by which to group the results.   Use
+the maxResults field to limit the number of results to return in a single response and the
+nextToken field to return the next batch of results if the response does not return the
+full set of results.   Note that an order field exists in both binBy and metrics. You can
+only specify one order in a given request.
+
+# Arguments
+- `bot_id`: The identifier for the bot for which you want to retrieve intent stage metrics.
+- `end_date_time`: The date and time that marks the end of the range of time for which you
+  want to see intent stage metrics.
+- `metrics`: A list of objects, each of which contains a metric you want to list, the
+  statistic for the metric you want to return, and the method by which to organize the
+  results.
+- `start_date_time`: The date and time that marks the beginning of the range of time for
+  which you want to see intent stage metrics.
+
+# Optional Parameters
+Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"binBy"`: A list of objects, each of which contains specifications for organizing the
+  results by time.
+- `"filters"`: A list of objects, each of which describes a condition by which you want to
+  filter the results.
+- `"groupBy"`: A list of objects, each of which specifies how to group the results. You can
+  group by the following criteria:    IntentStageName – The name of the intent stage.
+  SwitchedToIntent – The intent to which the conversation was switched (if any).
+- `"maxResults"`: The maximum number of results to return in each page of results. If there
+  are fewer results than the maximum page size, only the actual number of results are
+  returned.
+- `"nextToken"`: If the response from the ListIntentStageMetrics operation contains more
+  results than specified in the maxResults parameter, a token is returned in the response.
+  Use the returned token in the nextToken parameter of a ListIntentStageMetrics request to
+  return the next page of results. For a complete set of results, call the
+  ListIntentStageMetrics operation until the nextToken returned in the response is null.
+"""
+function list_intent_stage_metrics(
+    botId,
+    endDateTime,
+    metrics,
+    startDateTime;
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return lex_models_v2(
+        "POST",
+        "/bots/$(botId)/analytics/intentstagemetrics",
+        Dict{String,Any}(
+            "endDateTime" => endDateTime,
+            "metrics" => metrics,
+            "startDateTime" => startDateTime,
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function list_intent_stage_metrics(
+    botId,
+    endDateTime,
+    metrics,
+    startDateTime,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return lex_models_v2(
+        "POST",
+        "/bots/$(botId)/analytics/intentstagemetrics",
+        Dict{String,Any}(
+            mergewith(
+                _merge,
+                Dict{String,Any}(
+                    "endDateTime" => endDateTime,
+                    "metrics" => metrics,
+                    "startDateTime" => startDateTime,
+                ),
+                params,
+            ),
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
     list_intents(bot_id, bot_version, locale_id)
     list_intents(bot_id, bot_version, locale_id, params::Dict{String,<:Any})
 
@@ -2808,6 +3064,168 @@ function list_recommended_intents(
         "POST",
         "/bots/$(botId)/botversions/$(botVersion)/botlocales/$(localeId)/botrecommendations/$(botRecommendationId)/intents",
         params;
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
+    list_session_analytics_data(bot_id, end_date_time, start_date_time)
+    list_session_analytics_data(bot_id, end_date_time, start_date_time, params::Dict{String,<:Any})
+
+Retrieves a list of metadata for individual user sessions with your bot. The startDateTime
+and endDateTime fields are required. These fields define a time range for which you want to
+retrieve results. Of the optional fields, you can organize the results in the following
+ways:   Use the filters field to filter the results and the sortBy field to specify the
+values by which to sort the results.   Use the maxResults field to limit the number of
+results to return in a single response and the nextToken field to return the next batch of
+results if the response does not return the full set of results.
+
+# Arguments
+- `bot_id`: The identifier for the bot for which you want to retrieve session analytics.
+- `end_date_time`: The date and time that marks the end of the range of time for which you
+  want to see session analytics.
+- `start_date_time`: The date and time that marks the beginning of the range of time for
+  which you want to see session analytics.
+
+# Optional Parameters
+Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"filters"`: A list of objects, each of which describes a condition by which you want to
+  filter the results.
+- `"maxResults"`: The maximum number of results to return in each page of results. If there
+  are fewer results than the maximum page size, only the actual number of results are
+  returned.
+- `"nextToken"`: If the response from the ListSessionAnalyticsData operation contains more
+  results than specified in the maxResults parameter, a token is returned in the response.
+  Use the returned token in the nextToken parameter of a ListSessionAnalyticsData request to
+  return the next page of results. For a complete set of results, call the
+  ListSessionAnalyticsData operation until the nextToken returned in the response is null.
+- `"sortBy"`: An object specifying the measure and method by which to sort the session
+  analytics data.
+"""
+function list_session_analytics_data(
+    botId, endDateTime, startDateTime; aws_config::AbstractAWSConfig=global_aws_config()
+)
+    return lex_models_v2(
+        "POST",
+        "/bots/$(botId)/analytics/sessions",
+        Dict{String,Any}("endDateTime" => endDateTime, "startDateTime" => startDateTime);
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function list_session_analytics_data(
+    botId,
+    endDateTime,
+    startDateTime,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return lex_models_v2(
+        "POST",
+        "/bots/$(botId)/analytics/sessions",
+        Dict{String,Any}(
+            mergewith(
+                _merge,
+                Dict{String,Any}(
+                    "endDateTime" => endDateTime, "startDateTime" => startDateTime
+                ),
+                params,
+            ),
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
+    list_session_metrics(bot_id, end_date_time, metrics, start_date_time)
+    list_session_metrics(bot_id, end_date_time, metrics, start_date_time, params::Dict{String,<:Any})
+
+Retrieves summary metrics for the user sessions with your bot. The following fields are
+required:    metrics – A list of AnalyticsSessionMetric objects. In each object, use the
+name field to specify the metric to calculate, the statistic field to specify whether to
+calculate the Sum, Average, or Max number, and the order field to specify whether to sort
+the results in Ascending or Descending order.    startDateTime and endDateTime – Define a
+time range for which you want to retrieve results.   Of the optional fields, you can
+organize the results in the following ways:   Use the filters field to filter the results,
+the groupBy field to specify categories by which to group the results, and the binBy field
+to specify time intervals by which to group the results.   Use the maxResults field to
+limit the number of results to return in a single response and the nextToken field to
+return the next batch of results if the response does not return the full set of results.
+Note that an order field exists in both binBy and metrics. Currently, you can specify it in
+either field, but not in both.
+
+# Arguments
+- `bot_id`: The identifier for the bot for which you want to retrieve session metrics.
+- `end_date_time`: The date and time that marks the end of the range of time for which you
+  want to see session metrics.
+- `metrics`: A list of objects, each of which contains a metric you want to list, the
+  statistic for the metric you want to return, and the method by which to organize the
+  results.
+- `start_date_time`: The date and time that marks the beginning of the range of time for
+  which you want to see session metrics.
+
+# Optional Parameters
+Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"binBy"`: A list of objects, each of which contains specifications for organizing the
+  results by time.
+- `"filters"`: A list of objects, each of which describes a condition by which you want to
+  filter the results.
+- `"groupBy"`: A list of objects, each of which specifies how to group the results. You can
+  group by the following criteria:    ConversationEndState – The final state of the
+  conversation. The possible end states are detailed in Key definitions in the user guide.
+  LocaleId – The unique identifier of the bot locale.
+- `"maxResults"`: The maximum number of results to return in each page of results. If there
+  are fewer results than the maximum page size, only the actual number of results are
+  returned.
+- `"nextToken"`: If the response from the ListSessionMetrics operation contains more
+  results than specified in the maxResults parameter, a token is returned in the response.
+  Use the returned token in the nextToken parameter of a ListSessionMetrics request to return
+  the next page of results. For a complete set of results, call the ListSessionMetrics
+  operation until the nextToken returned in the response is null.
+"""
+function list_session_metrics(
+    botId,
+    endDateTime,
+    metrics,
+    startDateTime;
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return lex_models_v2(
+        "POST",
+        "/bots/$(botId)/analytics/sessionmetrics",
+        Dict{String,Any}(
+            "endDateTime" => endDateTime,
+            "metrics" => metrics,
+            "startDateTime" => startDateTime,
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function list_session_metrics(
+    botId,
+    endDateTime,
+    metrics,
+    startDateTime,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return lex_models_v2(
+        "POST",
+        "/bots/$(botId)/analytics/sessionmetrics",
+        Dict{String,Any}(
+            mergewith(
+                _merge,
+                Dict{String,Any}(
+                    "endDateTime" => endDateTime,
+                    "metrics" => metrics,
+                    "startDateTime" => startDateTime,
+                ),
+                params,
+            ),
+        );
         aws_config=aws_config,
         feature_set=SERVICE_FEATURE_SET,
     )
@@ -3099,6 +3517,177 @@ function list_test_sets(
 )
     return lex_models_v2(
         "POST", "/testsets", params; aws_config=aws_config, feature_set=SERVICE_FEATURE_SET
+    )
+end
+
+"""
+    list_utterance_analytics_data(bot_id, end_date_time, start_date_time)
+    list_utterance_analytics_data(bot_id, end_date_time, start_date_time, params::Dict{String,<:Any})
+
+ To use this API operation, your IAM role must have permissions to perform the
+ListAggregatedUtterances operation, which provides access to utterance-related analytics.
+See Viewing utterance statistics for the IAM policy to apply to the IAM role.  Retrieves a
+list of metadata for individual user utterances to your bot. The following fields are
+required:    startDateTime and endDateTime – Define a time range for which you want to
+retrieve results.   Of the optional fields, you can organize the results in the following
+ways:   Use the filters field to filter the results and the sortBy field to specify the
+values by which to sort the results.   Use the maxResults field to limit the number of
+results to return in a single response and the nextToken field to return the next batch of
+results if the response does not return the full set of results.
+
+# Arguments
+- `bot_id`: The identifier for the bot for which you want to retrieve utterance analytics.
+- `end_date_time`: The date and time that marks the end of the range of time for which you
+  want to see utterance analytics.
+- `start_date_time`: The date and time that marks the beginning of the range of time for
+  which you want to see utterance analytics.
+
+# Optional Parameters
+Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"filters"`: A list of objects, each of which describes a condition by which you want to
+  filter the results.
+- `"maxResults"`: The maximum number of results to return in each page of results. If there
+  are fewer results than the maximum page size, only the actual number of results are
+  returned.
+- `"nextToken"`: If the response from the ListUtteranceAnalyticsData operation contains
+  more results than specified in the maxResults parameter, a token is returned in the
+  response. Use the returned token in the nextToken parameter of a ListUtteranceAnalyticsData
+  request to return the next page of results. For a complete set of results, call the
+  ListUtteranceAnalyticsData operation until the nextToken returned in the response is null.
+- `"sortBy"`: An object specifying the measure and method by which to sort the utterance
+  analytics data.
+"""
+function list_utterance_analytics_data(
+    botId, endDateTime, startDateTime; aws_config::AbstractAWSConfig=global_aws_config()
+)
+    return lex_models_v2(
+        "POST",
+        "/bots/$(botId)/analytics/utterances",
+        Dict{String,Any}("endDateTime" => endDateTime, "startDateTime" => startDateTime);
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function list_utterance_analytics_data(
+    botId,
+    endDateTime,
+    startDateTime,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return lex_models_v2(
+        "POST",
+        "/bots/$(botId)/analytics/utterances",
+        Dict{String,Any}(
+            mergewith(
+                _merge,
+                Dict{String,Any}(
+                    "endDateTime" => endDateTime, "startDateTime" => startDateTime
+                ),
+                params,
+            ),
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
+    list_utterance_metrics(bot_id, end_date_time, metrics, start_date_time)
+    list_utterance_metrics(bot_id, end_date_time, metrics, start_date_time, params::Dict{String,<:Any})
+
+ To use this API operation, your IAM role must have permissions to perform the
+ListAggregatedUtterances operation, which provides access to utterance-related analytics.
+See Viewing utterance statistics for the IAM policy to apply to the IAM role.  Retrieves
+summary metrics for the utterances in your bot. The following fields are required:
+metrics – A list of AnalyticsUtteranceMetric objects. In each object, use the name field
+to specify the metric to calculate, the statistic field to specify whether to calculate the
+Sum, Average, or Max number, and the order field to specify whether to sort the results in
+Ascending or Descending order.    startDateTime and endDateTime – Define a time range for
+which you want to retrieve results.   Of the optional fields, you can organize the results
+in the following ways:   Use the filters field to filter the results, the groupBy field to
+specify categories by which to group the results, and the binBy field to specify time
+intervals by which to group the results.   Use the maxResults field to limit the number of
+results to return in a single response and the nextToken field to return the next batch of
+results if the response does not return the full set of results.   Note that an order field
+exists in both binBy and metrics. Currently, you can specify it in either field, but not in
+both.
+
+# Arguments
+- `bot_id`: The identifier for the bot for which you want to retrieve utterance metrics.
+- `end_date_time`: The date and time that marks the end of the range of time for which you
+  want to see utterance metrics.
+- `metrics`: A list of objects, each of which contains a metric you want to list, the
+  statistic for the metric you want to return, and the method by which to organize the
+  results.
+- `start_date_time`: The date and time that marks the beginning of the range of time for
+  which you want to see utterance metrics.
+
+# Optional Parameters
+Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"attributes"`: A list containing attributes related to the utterance that you want the
+  response to return. The following attributes are possible:    LastUsedIntent – The last
+  used intent at the time of the utterance.
+- `"binBy"`: A list of objects, each of which contains specifications for organizing the
+  results by time.
+- `"filters"`: A list of objects, each of which describes a condition by which you want to
+  filter the results.
+- `"groupBy"`: A list of objects, each of which specifies how to group the results. You can
+  group by the following criteria:    UtteranceText – The transcription of the utterance.
+   UtteranceState – The state of the utterance. The possible states are detailed in Key
+  definitions in the user guide.
+- `"maxResults"`: The maximum number of results to return in each page of results. If there
+  are fewer results than the maximum page size, only the actual number of results are
+  returned.
+- `"nextToken"`: If the response from the ListUtteranceMetrics operation contains more
+  results than specified in the maxResults parameter, a token is returned in the response.
+  Use the returned token in the nextToken parameter of a ListUtteranceMetrics request to
+  return the next page of results. For a complete set of results, call the
+  ListUtteranceMetrics operation until the nextToken returned in the response is null.
+"""
+function list_utterance_metrics(
+    botId,
+    endDateTime,
+    metrics,
+    startDateTime;
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return lex_models_v2(
+        "POST",
+        "/bots/$(botId)/analytics/utterancemetrics",
+        Dict{String,Any}(
+            "endDateTime" => endDateTime,
+            "metrics" => metrics,
+            "startDateTime" => startDateTime,
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function list_utterance_metrics(
+    botId,
+    endDateTime,
+    metrics,
+    startDateTime,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return lex_models_v2(
+        "POST",
+        "/bots/$(botId)/analytics/utterancemetrics",
+        Dict{String,Any}(
+            mergewith(
+                _merge,
+                Dict{String,Any}(
+                    "endDateTime" => endDateTime,
+                    "metrics" => metrics,
+                    "startDateTime" => startDateTime,
+                ),
+                params,
+            ),
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
     )
 end
 

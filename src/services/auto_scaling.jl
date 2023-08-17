@@ -392,8 +392,7 @@ notifications to the target.   Create the lifecycle hook. Specify whether the ho
 when the instances launch or terminate.   If you need more time, record the lifecycle
 action heartbeat to keep the instance in a wait state.    If you finish before the timeout
 period ends, send a callback by using the CompleteLifecycleAction API call.    For more
-information, see Amazon EC2 Auto Scaling lifecycle hooks in the Amazon EC2 Auto Scaling
-User Guide.
+information, see Complete a lifecycle action in the Amazon EC2 Auto Scaling User Guide.
 
 # Arguments
 - `auto_scaling_group_name`: The name of the Auto Scaling group.
@@ -2144,9 +2143,9 @@ end
     detach_traffic_sources(auto_scaling_group_name, traffic_sources, params::Dict{String,<:Any})
 
 Detaches one or more traffic sources from the specified Auto Scaling group. When you detach
-a taffic, it enters the Removing state while deregistering the instances in the group. When
-all instances are deregistered, then you can no longer describe the traffic source using
-the DescribeTrafficSources API call. The instances continue to run.
+a traffic source, it enters the Removing state while deregistering the instances in the
+group. When all instances are deregistered, then you can no longer describe the traffic
+source using the DescribeTrafficSources API call. The instances continue to run.
 
 # Arguments
 - `auto_scaling_group_name`: The name of the Auto Scaling group.
@@ -2745,8 +2744,8 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   the policy type is PredictiveScaling.
 - `"ScalingAdjustment"`: The amount by which to scale, based on the specified adjustment
   type. A positive value adds to the current capacity while a negative number removes from
-  the current capacity. For exact capacity, you must specify a positive value. Required if
-  the policy type is SimpleScaling. (Not used with any other policy type.)
+  the current capacity. For exact capacity, you must specify a non-negative value. Required
+  if the policy type is SimpleScaling. (Not used with any other policy type.)
 - `"StepAdjustments"`: A set of adjustments that enable you to scale based on the size of
   the alarm breach. Required if the policy type is StepScaling. (Not used with any other
   policy type.)
@@ -3060,8 +3059,8 @@ function resume_processes(
 end
 
 """
-    rollback_instance_refresh()
-    rollback_instance_refresh(params::Dict{String,<:Any})
+    rollback_instance_refresh(auto_scaling_group_name)
+    rollback_instance_refresh(auto_scaling_group_name, params::Dict{String,<:Any})
 
 Cancels an instance refresh that is in progress and rolls back any changes that it made.
 Amazon EC2 Auto Scaling replaces any instances that were replaced during the instance
@@ -3076,21 +3075,34 @@ launch template's Latest or Default version.   When you receive a successful res
 this operation, Amazon EC2 Auto Scaling immediately begins replacing instances. You can
 check the status of this operation through the DescribeInstanceRefreshes API operation.
 
-# Optional Parameters
-Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
-- `"AutoScalingGroupName"`: The name of the Auto Scaling group.
+# Arguments
+- `auto_scaling_group_name`: The name of the Auto Scaling group.
+
 """
-function rollback_instance_refresh(; aws_config::AbstractAWSConfig=global_aws_config())
-    return auto_scaling(
-        "RollbackInstanceRefresh"; aws_config=aws_config, feature_set=SERVICE_FEATURE_SET
-    )
-end
 function rollback_instance_refresh(
-    params::AbstractDict{String}; aws_config::AbstractAWSConfig=global_aws_config()
+    AutoScalingGroupName; aws_config::AbstractAWSConfig=global_aws_config()
 )
     return auto_scaling(
         "RollbackInstanceRefresh",
-        params;
+        Dict{String,Any}("AutoScalingGroupName" => AutoScalingGroupName);
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function rollback_instance_refresh(
+    AutoScalingGroupName,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return auto_scaling(
+        "RollbackInstanceRefresh",
+        Dict{String,Any}(
+            mergewith(
+                _merge,
+                Dict{String,Any}("AutoScalingGroupName" => AutoScalingGroupName),
+                params,
+            ),
+        );
         aws_config=aws_config,
         feature_set=SERVICE_FEATURE_SET,
     )
@@ -3309,8 +3321,8 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   expected when you start it. Includes the instance warmup time, the minimum healthy
   percentage, and the behaviors that you want Amazon EC2 Auto Scaling to use if instances
   that are in Standby state or protected from scale in are found. You can also choose to
-  enable additional features, such as the following:   Auto rollback   Checkpoints   Skip
-  matching
+  enable additional features, such as the following:   Auto rollback   Checkpoints
+  CloudWatch alarms   Skip matching
 - `"Strategy"`: The strategy to use for the instance refresh. The only valid value is
   Rolling.
 """

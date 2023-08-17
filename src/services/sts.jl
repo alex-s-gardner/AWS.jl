@@ -143,6 +143,7 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   that owns the role. You cannot use session policies to grant more permissions than those
   allowed by the identity-based policy of the role that is being assumed. For more
   information, see Session Policies in the IAM User Guide.
+- `"ProvidedContexts"`: Reserved for future use.
 - `"SerialNumber"`: The identification number of the MFA device that is associated with the
   user who is making the AssumeRole call. Specify this value if the trust policy of the role
   being assumed includes a condition that requires MFA authentication. The value is either
@@ -500,7 +501,8 @@ use web identity federation to get access to content in Amazon S3.
 - `web_identity_token`: The OAuth 2.0 access token or OpenID Connect ID token that is
   provided by the identity provider. Your application must get this token by authenticating
   the user who is using your application with a web identity provider before the application
-  makes an AssumeRoleWithWebIdentity call.
+  makes an AssumeRoleWithWebIdentity call. Only tokens with RSA algorithms (RS256) are
+  supported.
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:

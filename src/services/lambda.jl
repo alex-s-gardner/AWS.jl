@@ -367,10 +367,10 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
 - `"SourceAccessConfigurations"`: An array of authentication protocols or VPC components
   required to secure your event source.
 - `"StartingPosition"`: The position in a stream from which to start reading. Required for
-  Amazon Kinesis, Amazon DynamoDB, and Amazon MSK Streams sources. AT_TIMESTAMP is supported
-  only for Amazon Kinesis streams and Amazon DocumentDB.
+  Amazon Kinesis and Amazon DynamoDB Stream event sources. AT_TIMESTAMP is supported only for
+  Amazon Kinesis streams, Amazon DocumentDB, Amazon MSK, and self-managed Apache Kafka.
 - `"StartingPositionTimestamp"`: With StartingPosition set to AT_TIMESTAMP, the time from
-  which to start reading.
+  which to start reading. StartingPositionTimestamp cannot be in the future.
 - `"Topics"`: The name of the Kafka topic.
 - `"TumblingWindowInSeconds"`: (Kinesis and DynamoDB Streams only) The duration in seconds
   of a processing window for DynamoDB and Kinesis Streams event sources. A value of 0 seconds
@@ -711,10 +711,11 @@ end
     delete_function(function_name, params::Dict{String,<:Any})
 
 Deletes a Lambda function. To delete a specific function version, use the Qualifier
-parameter. Otherwise, all versions and aliases are deleted. To delete Lambda event source
-mappings that invoke a function, use DeleteEventSourceMapping. For Amazon Web Services and
-resources that invoke your function directly, delete the trigger in the service where you
-originally configured it.
+parameter. Otherwise, all versions and aliases are deleted. This doesn't require the user
+to have explicit permissions for DeleteAlias. To delete Lambda event source mappings that
+invoke a function, use DeleteEventSourceMapping. For Amazon Web Services and resources that
+invoke your function directly, delete the trigger in the service where you originally
+configured it.
 
 # Arguments
 - `function_name`: The name of the Lambda function or version.  Name formats     Function

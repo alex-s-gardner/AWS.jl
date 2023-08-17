@@ -244,7 +244,8 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   isn't specified. If schedulingStrategy is DAEMON then this isn't required.
 - `"enableECSManagedTags"`: Specifies whether to turn on Amazon ECS managed tags for the
   tasks within the service. For more information, see Tagging your Amazon ECS resources in
-  the Amazon Elastic Container Service Developer Guide.
+  the Amazon Elastic Container Service Developer Guide. When you use Amazon ECS managed tags,
+  you need to set the propagateTags request parameter.
 - `"enableExecuteCommand"`: Determines whether the execute command functionality is turned
   on for the service. If true, this enables execute command functionality on all containers
   in the service tasks.
@@ -318,7 +319,7 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
 - `"propagateTags"`: Specifies whether to propagate the tags from the task definition to
   the task. If no value is specified, the tags aren't propagated. Tags can only be propagated
   to the task during task creation. To add tags to a task after task creation, use the
-  TagResource API action.
+  TagResource API action. The default is NONE.
 - `"role"`: The name or full Amazon Resource Name (ARN) of the IAM role that allows Amazon
   ECS to make calls to your load balancer on your behalf. This parameter is only permitted if
   you are using a load balancer with your service and your task definition doesn't use the
@@ -414,7 +415,8 @@ types in the Amazon Elastic Container Service Developer Guide.
   the service to create the task set in.
 - `service`: The short name or full Amazon Resource Name (ARN) of the service to create the
   task set in.
-- `task_definition`: The task definition for the tasks in the task set to use.
+- `task_definition`: The task definition for the tasks in the task set to use. If a
+  revision isn't specified, the latest ACTIVE revision is used.
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
@@ -729,6 +731,11 @@ count. You can't use a DELETE_IN_PROGRESS task definition revision to run new ta
 create new services. You also can't update an existing service to reference a
 DELETE_IN_PROGRESS task definition revision.  A task definition revision will stay in
 DELETE_IN_PROGRESS status until all the associated tasks and services have been terminated.
+When you delete all INACTIVE task definition revisions, the task definition name is not
+displayed in the console and not returned in the API. If a task definition revisions are in
+the DELETE_IN_PROGRESS state, the task definition name is displayed in the console and
+returned in the API. The task definition name is retained by Amazon ECS and the revision is
+incremented the next time you create a task definition with that name.
 
 # Arguments
 - `task_definitions`: The family and revision (family:revision) or full Amazon Resource
@@ -1190,7 +1197,9 @@ end
     describe_tasks(tasks, params::Dict{String,<:Any})
 
 Describes a specified task or tasks. Currently, stopped tasks appear in the returned
-results for at least one hour.
+results for at least one hour. If you have tasks with tags, and then delete the cluster,
+the tagged tasks are returned in the response. If you create a new cluster with the same
+name as the deleted cluster, the tagged tasks are not included in the response.
 
 # Arguments
 - `tasks`: A list of up to 100 task IDs or full ARN entries.
@@ -1773,8 +1782,7 @@ end
 
 Returns a list of tasks. You can filter the results by cluster, task definition family,
 container instance, launch type, what IAM principal started the task, or by the desired
-status of the task. Recently stopped tasks might appear in the returned results. Currently,
-stopped tasks appear in the returned results for at least one hour.
+status of the task. Recently stopped tasks might appear in the returned results.
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
@@ -3177,10 +3185,8 @@ each have two, container instances in either zone B or C are considered optimal 
 termination.   Stop the task on a container instance in an optimal Availability Zone (based
 on the previous steps), favoring container instances with the largest number of running
 tasks for this service.    You must have a service-linked role when you update any of the
-following service properties. If you specified a custom role when you created the service,
-Amazon ECS automatically replaces the roleARN associated with the service with the ARN of
-your service-linked role. For more information, see Service-linked roles in the Amazon
-Elastic Container Service Developer Guide.    loadBalancers,     serviceRegistries
+following service properties:    loadBalancers,    serviceRegistries    For more
+information about the role see the CreateService request parameter  role .
 
 # Arguments
 - `service`: The name of the service to update.

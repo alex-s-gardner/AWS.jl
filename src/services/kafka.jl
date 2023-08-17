@@ -576,6 +576,41 @@ function describe_cluster_operation(
 end
 
 """
+    describe_cluster_operation_v2(cluster_operation_arn)
+    describe_cluster_operation_v2(cluster_operation_arn, params::Dict{String,<:Any})
+
+
+            Returns a description of the cluster operation specified by the ARN.
+
+# Arguments
+- `cluster_operation_arn`: ARN of the cluster operation to describe.
+
+"""
+function describe_cluster_operation_v2(
+    clusterOperationArn; aws_config::AbstractAWSConfig=global_aws_config()
+)
+    return kafka(
+        "GET",
+        "/api/v2/operations/$(clusterOperationArn)";
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function describe_cluster_operation_v2(
+    clusterOperationArn,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return kafka(
+        "GET",
+        "/api/v2/operations/$(clusterOperationArn)",
+        params;
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
     describe_cluster_v2(cluster_arn)
     describe_cluster_v2(cluster_arn, params::Dict{String,<:Any})
 
@@ -912,6 +947,46 @@ function list_cluster_operations(
     return kafka(
         "GET",
         "/v1/clusters/$(clusterArn)/operations",
+        params;
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
+    list_cluster_operations_v2(cluster_arn)
+    list_cluster_operations_v2(cluster_arn, params::Dict{String,<:Any})
+
+
+            Returns a list of all the operations that have been performed on the specified
+MSK cluster.
+
+# Arguments
+- `cluster_arn`: The arn of the cluster whose operations are being requested.
+
+# Optional Parameters
+Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"maxResults"`: The maxResults of the query.
+- `"nextToken"`: The nextToken of the query.
+"""
+function list_cluster_operations_v2(
+    clusterArn; aws_config::AbstractAWSConfig=global_aws_config()
+)
+    return kafka(
+        "GET",
+        "/api/v2/clusters/$(clusterArn)/operations";
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function list_cluster_operations_v2(
+    clusterArn,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return kafka(
+        "GET",
+        "/api/v2/clusters/$(clusterArn)/operations",
         params;
         aws_config=aws_config,
         feature_set=SERVICE_FEATURE_SET,

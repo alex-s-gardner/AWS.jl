@@ -5,6 +5,54 @@ using AWS.Compat
 using AWS.UUIDs
 
 """
+    batch_get_collaboration_analysis_template(analysis_template_arns, collaboration_identifier)
+    batch_get_collaboration_analysis_template(analysis_template_arns, collaboration_identifier, params::Dict{String,<:Any})
+
+Retrieves multiple analysis templates within a collaboration by their Amazon Resource Names
+(ARNs).
+
+# Arguments
+- `analysis_template_arns`: The Amazon Resource Name (ARN) associated with the analysis
+  template within a collaboration.
+- `collaboration_identifier`: A unique identifier for the collaboration that the analysis
+  templates belong to. Currently accepts collaboration ID.
+
+"""
+function batch_get_collaboration_analysis_template(
+    analysisTemplateArns,
+    collaborationIdentifier;
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return cleanrooms(
+        "POST",
+        "/collaborations/$(collaborationIdentifier)/batch-analysistemplates",
+        Dict{String,Any}("analysisTemplateArns" => analysisTemplateArns);
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function batch_get_collaboration_analysis_template(
+    analysisTemplateArns,
+    collaborationIdentifier,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return cleanrooms(
+        "POST",
+        "/collaborations/$(collaborationIdentifier)/batch-analysistemplates",
+        Dict{String,Any}(
+            mergewith(
+                _merge,
+                Dict{String,Any}("analysisTemplateArns" => analysisTemplateArns),
+                params,
+            ),
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
     batch_get_schema(collaboration_identifier, names)
     batch_get_schema(collaboration_identifier, names, params::Dict{String,<:Any})
 
@@ -37,6 +85,66 @@ function batch_get_schema(
         "POST",
         "/collaborations/$(collaborationIdentifier)/batch-schema",
         Dict{String,Any}(mergewith(_merge, Dict{String,Any}("names" => names), params));
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
+    create_analysis_template(format, membership_identifier, name, source)
+    create_analysis_template(format, membership_identifier, name, source, params::Dict{String,<:Any})
+
+Creates a new analysis template.
+
+# Arguments
+- `format`: The format of the analysis template.
+- `membership_identifier`: The identifier for a membership resource.
+- `name`: The name of the analysis template.
+- `source`: The information in the analysis template. Currently supports text, the query
+  text for the analysis template.
+
+# Optional Parameters
+Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"analysisParameters"`: The parameters of the analysis template.
+- `"description"`: The description of the analysis template.
+- `"tags"`: An optional label that you can assign to a resource when you create it. Each
+  tag consists of a key and an optional value, both of which you define. When you use
+  tagging, you can also use tag-based access control in IAM policies to control access to
+  this resource.
+"""
+function create_analysis_template(
+    format,
+    membershipIdentifier,
+    name,
+    source;
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return cleanrooms(
+        "POST",
+        "/memberships/$(membershipIdentifier)/analysistemplates",
+        Dict{String,Any}("format" => format, "name" => name, "source" => source);
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function create_analysis_template(
+    format,
+    membershipIdentifier,
+    name,
+    source,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return cleanrooms(
+        "POST",
+        "/memberships/$(membershipIdentifier)/analysistemplates",
+        Dict{String,Any}(
+            mergewith(
+                _merge,
+                Dict{String,Any}("format" => format, "name" => name, "source" => source),
+                params,
+            ),
+        );
         aws_config=aws_config,
         feature_set=SERVICE_FEATURE_SET,
     )
@@ -134,7 +242,7 @@ Creates a new configured table resource.
 - `analysis_method`: The analysis method for the configured tables. The only valid value is
   currently `DIRECT_QUERY`.
 - `name`: The name of the configured table.
-- `table_reference`: A reference to the AWS Glue table being configured.
+- `table_reference`: A reference to the Glue table being configured.
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
@@ -201,7 +309,7 @@ be created for a given configured table.
 
 # Arguments
 - `analysis_rule_policy`: The entire created configured table analysis rule object.
-- `analysis_rule_type`: The type of analysis rule. Valid values are AGGREGATION and LIST.
+- `analysis_rule_type`: The type of analysis rule.
 - `configured_table_identifier`: The identifier for the configured table to create the
   analysis rule for. Currently accepts the configured table ID.
 
@@ -373,6 +481,44 @@ function create_membership(
                 params,
             ),
         );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
+    delete_analysis_template(analysis_template_identifier, membership_identifier)
+    delete_analysis_template(analysis_template_identifier, membership_identifier, params::Dict{String,<:Any})
+
+Deletes an analysis template.
+
+# Arguments
+- `analysis_template_identifier`: The identifier for the analysis template resource.
+- `membership_identifier`: The identifier for a membership resource.
+
+"""
+function delete_analysis_template(
+    analysisTemplateIdentifier,
+    membershipIdentifier;
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return cleanrooms(
+        "DELETE",
+        "/memberships/$(membershipIdentifier)/analysistemplates/$(analysisTemplateIdentifier)";
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function delete_analysis_template(
+    analysisTemplateIdentifier,
+    membershipIdentifier,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return cleanrooms(
+        "DELETE",
+        "/memberships/$(membershipIdentifier)/analysistemplates/$(analysisTemplateIdentifier)",
+        params;
         aws_config=aws_config,
         feature_set=SERVICE_FEATURE_SET,
     )
@@ -599,6 +745,44 @@ function delete_membership(
 end
 
 """
+    get_analysis_template(analysis_template_identifier, membership_identifier)
+    get_analysis_template(analysis_template_identifier, membership_identifier, params::Dict{String,<:Any})
+
+Retrieves an analysis template.
+
+# Arguments
+- `analysis_template_identifier`: The identifier for the analysis template resource.
+- `membership_identifier`: The identifier for a membership resource.
+
+"""
+function get_analysis_template(
+    analysisTemplateIdentifier,
+    membershipIdentifier;
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return cleanrooms(
+        "GET",
+        "/memberships/$(membershipIdentifier)/analysistemplates/$(analysisTemplateIdentifier)";
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function get_analysis_template(
+    analysisTemplateIdentifier,
+    membershipIdentifier,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return cleanrooms(
+        "GET",
+        "/memberships/$(membershipIdentifier)/analysistemplates/$(analysisTemplateIdentifier)",
+        params;
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
     get_collaboration(collaboration_identifier)
     get_collaboration(collaboration_identifier, params::Dict{String,<:Any})
 
@@ -626,6 +810,46 @@ function get_collaboration(
     return cleanrooms(
         "GET",
         "/collaborations/$(collaborationIdentifier)",
+        params;
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
+    get_collaboration_analysis_template(analysis_template_arn, collaboration_identifier)
+    get_collaboration_analysis_template(analysis_template_arn, collaboration_identifier, params::Dict{String,<:Any})
+
+Retrieves an analysis template within a collaboration.
+
+# Arguments
+- `analysis_template_arn`: The Amazon Resource Name (ARN) associated with the analysis
+  template within a collaboration.
+- `collaboration_identifier`: A unique identifier for the collaboration that the analysis
+  templates belong to. Currently accepts collaboration ID.
+
+"""
+function get_collaboration_analysis_template(
+    analysisTemplateArn,
+    collaborationIdentifier;
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return cleanrooms(
+        "GET",
+        "/collaborations/$(collaborationIdentifier)/analysistemplates/$(analysisTemplateArn)";
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function get_collaboration_analysis_template(
+    analysisTemplateArn,
+    collaborationIdentifier,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return cleanrooms(
+        "GET",
+        "/collaborations/$(collaborationIdentifier)/analysistemplates/$(analysisTemplateArn)",
         params;
         aws_config=aws_config,
         feature_set=SERVICE_FEATURE_SET,
@@ -889,6 +1113,85 @@ function get_schema_analysis_rule(
     return cleanrooms(
         "GET",
         "/collaborations/$(collaborationIdentifier)/schemas/$(name)/analysisRule/$(type)",
+        params;
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
+    list_analysis_templates(membership_identifier)
+    list_analysis_templates(membership_identifier, params::Dict{String,<:Any})
+
+Lists analysis templates that the caller owns.
+
+# Arguments
+- `membership_identifier`: The identifier for a membership resource.
+
+# Optional Parameters
+Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"maxResults"`: The maximum size of the results that is returned per call.
+- `"nextToken"`: The token value retrieved from a previous call to access the next page of
+  results.
+"""
+function list_analysis_templates(
+    membershipIdentifier; aws_config::AbstractAWSConfig=global_aws_config()
+)
+    return cleanrooms(
+        "GET",
+        "/memberships/$(membershipIdentifier)/analysistemplates";
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function list_analysis_templates(
+    membershipIdentifier,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return cleanrooms(
+        "GET",
+        "/memberships/$(membershipIdentifier)/analysistemplates",
+        params;
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
+    list_collaboration_analysis_templates(collaboration_identifier)
+    list_collaboration_analysis_templates(collaboration_identifier, params::Dict{String,<:Any})
+
+Lists analysis templates within a collaboration.
+
+# Arguments
+- `collaboration_identifier`: A unique identifier for the collaboration that the analysis
+  templates belong to. Currently accepts collaboration ID.
+
+# Optional Parameters
+Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"maxResults"`: The maximum size of the results that is returned per call.
+- `"nextToken"`: The token value retrieved from a previous call to access the next page of
+  results.
+"""
+function list_collaboration_analysis_templates(
+    collaborationIdentifier; aws_config::AbstractAWSConfig=global_aws_config()
+)
+    return cleanrooms(
+        "GET",
+        "/collaborations/$(collaborationIdentifier)/analysistemplates";
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function list_collaboration_analysis_templates(
+    collaborationIdentifier,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return cleanrooms(
+        "GET",
+        "/collaborations/$(collaborationIdentifier)/analysistemplates",
         params;
         aws_config=aws_config,
         feature_set=SERVICE_FEATURE_SET,
@@ -1189,7 +1492,7 @@ end
     start_protected_query(membership_identifier, result_configuration, sql_parameters, type)
     start_protected_query(membership_identifier, result_configuration, sql_parameters, type, params::Dict{String,<:Any})
 
-Creates a protected query that is started by AWS Clean Rooms.
+Creates a protected query that is started by Clean Rooms .
 
 # Arguments
 - `membership_identifier`: A unique identifier for the membership to run this query
@@ -1314,6 +1617,47 @@ function untag_resource(
         "DELETE",
         "/tags/$(resourceArn)",
         Dict{String,Any}(mergewith(_merge, Dict{String,Any}("tagKeys" => tagKeys), params));
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
+    update_analysis_template(analysis_template_identifier, membership_identifier)
+    update_analysis_template(analysis_template_identifier, membership_identifier, params::Dict{String,<:Any})
+
+Updates the analysis template metadata.
+
+# Arguments
+- `analysis_template_identifier`: The identifier for the analysis template resource.
+- `membership_identifier`: The identifier for a membership resource.
+
+# Optional Parameters
+Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"description"`: A new description for the analysis template.
+"""
+function update_analysis_template(
+    analysisTemplateIdentifier,
+    membershipIdentifier;
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return cleanrooms(
+        "PATCH",
+        "/memberships/$(membershipIdentifier)/analysistemplates/$(analysisTemplateIdentifier)";
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function update_analysis_template(
+    analysisTemplateIdentifier,
+    membershipIdentifier,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return cleanrooms(
+        "PATCH",
+        "/memberships/$(membershipIdentifier)/analysistemplates/$(analysisTemplateIdentifier)",
+        params;
         aws_config=aws_config,
         feature_set=SERVICE_FEATURE_SET,
     )

@@ -59,7 +59,7 @@ Use to create a scan using code uploaded to an S3 bucket.
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
 - `"analysisType"`: The type of analysis you want CodeGuru Security to perform in the scan,
-  either Security or All. The Secuirty type only generates findings related to security. The
+  either Security or All. The Security type only generates findings related to security. The
   All type generates both security findings and quality findings. Defaults to Security type
   if missing.
 - `"clientToken"`: The idempotency token for the request. Amazon CodeGuru Security uses
@@ -349,7 +349,7 @@ end
     list_scans()
     list_scans(params::Dict{String,<:Any})
 
-Returns a list of all the scans in an account.
+Returns a list of all the standard scans in an account. Does not return express scans.
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:

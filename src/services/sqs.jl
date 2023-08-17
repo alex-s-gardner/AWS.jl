@@ -100,10 +100,15 @@ end
     cancel_message_move_task(task_handle)
     cancel_message_move_task(task_handle, params::Dict{String,<:Any})
 
-Cancels a specified message movement task.    A message movement can only be cancelled when
-the current status is RUNNING.   Cancelling a message movement task does not revert the
+Cancels a specified message movement task. A message movement can only be cancelled when
+the current status is RUNNING. Cancelling a message movement task does not revert the
 messages that have already been moved. It can only stop the messages that have not been
-moved yet.
+moved yet.    This action is currently limited to supporting message redrive from
+dead-letter queues (DLQs) only. In this context, the source queue is the dead-letter queue
+(DLQ), while the destination queue can be the original source queue (from which the
+messages were driven to the dead-letter-queue), or a custom destination queue.
+Currently, only standard queues are supported.   Only one active message movement task is
+supported per queue at any given time.
 
 # Arguments
 - `task_handle`: An identifier associated with a message movement task.
@@ -807,6 +812,12 @@ end
     list_message_move_tasks(source_arn, params::Dict{String,<:Any})
 
 Gets the most recent message movement tasks (up to 10) under a specific source queue.
+This action is currently limited to supporting message redrive from dead-letter queues
+(DLQs) only. In this context, the source queue is the dead-letter queue (DLQ), while the
+destination queue can be the original source queue (from which the messages were driven to
+the dead-letter-queue), or a custom destination queue.    Currently, only standard queues
+are supported.   Only one active message movement task is supported per queue at any given
+time.
 
 # Arguments
 - `source_arn`: The ARN of the queue whose message movement tasks are to be listed.
@@ -914,12 +925,12 @@ end
     purge_queue(queue_url)
     purge_queue(queue_url, params::Dict{String,<:Any})
 
-Deletes the messages in a queue specified by the QueueURL parameter.  When you use the
-PurgeQueue action, you can't retrieve any messages deleted from a queue. The message
-deletion process takes up to 60 seconds. We recommend waiting for 60 seconds regardless of
-your queue's size.   Messages sent to the queue before you call PurgeQueue might be
-received but are deleted within the next minute. Messages sent to the queue after you call
-PurgeQueue might be deleted while the queue is being purged.
+Deletes available messages in a queue (including in-flight messages) specified by the
+QueueURL parameter.  When you use the PurgeQueue action, you can't retrieve any messages
+deleted from a queue. The message deletion process takes up to 60 seconds. We recommend
+waiting for 60 seconds regardless of your queue's size.   Messages sent to the queue before
+you call PurgeQueue might be received but are deleted within the next minute. Messages sent
+to the queue after you call PurgeQueue might be deleted while the queue is being purged.
 
 # Arguments
 - `queue_url`: The URL of the queue from which the PurgeQueue action deletes messages.
@@ -1432,15 +1443,20 @@ end
 
 Starts an asynchronous task to move messages from a specified source queue to a specified
 destination queue.    This action is currently limited to supporting message redrive from
-dead-letter queues (DLQs) only. In this context, the source queue is the dead-letter queue
-(DLQ), while the destination queue can be the original source queue (from which the
-messages were driven to the dead-letter-queue), or a custom destination queue.
-Currently, only standard queues are supported.   Only one active message movement task is
-supported per queue at any given time.
+queues that are configured as dead-letter queues (DLQs) of other Amazon SQS queues only.
+Non-SQS queue sources of dead-letter queues, such as Lambda or Amazon SNS topics, are
+currently not supported.   In dead-letter queues redrive context, the StartMessageMoveTask
+the source queue is the DLQ, while the destination queue can be the original source queue
+(from which the messages were driven to the dead-letter-queue), or a custom destination
+queue.   Currently, only standard queues support redrive. FIFO queues don't support
+redrive.   Only one active message movement task is supported per queue at any given time.
+
 
 # Arguments
 - `source_arn`: The ARN of the queue that contains the messages to be moved to another
-  queue. Currently, only dead-letter queue (DLQ) ARNs are accepted.
+  queue. Currently, only ARNs of dead-letter queues (DLQs) whose sources are other Amazon SQS
+  queues are accepted. DLQs whose sources are non-SQS queues, such as Lambda or Amazon SNS
+  topics, are not currently supported.
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:

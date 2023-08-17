@@ -59,7 +59,8 @@ distribution. A staging distribution is a copy of an existing distribution (call
 primary distribution) that you can use in a continuous deployment workflow. After you
 create a staging distribution, you can use UpdateDistribution to modify the staging
 distribution's configuration. Then you can use CreateContinuousDeploymentPolicy to
-incrementally move traffic to the staging distribution.
+incrementally move traffic to the staging distribution. This API operation requires the
+following IAM permissions:    GetDistribution     CreateDistribution     CopyDistribution
 
 # Arguments
 - `caller_reference`: A value that uniquely identifies a request to create a resource. This
@@ -70,6 +71,10 @@ incrementally move traffic to the staging distribution.
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"Enabled"`: A Boolean flag to specify the state of the staging distribution when it's
+  created. When you set this value to True, the staging distribution is enabled. When you set
+  this value to False, the staging distribution is disabled. If you omit this field, the
+  default value is True.
 - `"If-Match"`: The version identifier of the primary distribution whose configuration you
   are copying. This is the ETag value returned in the response to GetDistribution and
   GetDistributionConfig.
@@ -305,7 +310,8 @@ end
     create_distribution_with_tags2020_05_31(distribution_config_with_tags)
     create_distribution_with_tags2020_05_31(distribution_config_with_tags, params::Dict{String,<:Any})
 
-Create a new distribution with tags.
+Create a new distribution with tags. This API operation requires the following IAM
+permissions:    CreateDistribution     TagResource
 
 # Arguments
 - `distribution_config_with_tags`: The distribution's configuration information.
@@ -3998,7 +4004,8 @@ distribution. After using a continuous deployment policy to move a portion of yo
 name's traffic to the staging distribution and verifying that it works as intended, you can
 use this operation to copy the staging distribution's configuration to the primary
 distribution. This action will disable the continuous deployment policy and move your
-domain's traffic back to the primary distribution.
+domain's traffic back to the primary distribution. This API operation requires the
+following IAM permissions:    GetDistribution     UpdateDistribution
 
 # Arguments
 - `id`: The identifier of the primary distribution to which you are copying a staging

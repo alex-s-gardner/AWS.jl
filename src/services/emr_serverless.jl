@@ -49,7 +49,7 @@ Creates an application.
 # Arguments
 - `client_token`: The client idempotency token of the application to create. Its value must
   be unique for each request.
-- `release_label`: The EMR release associated with the application.
+- `release_label`: The Amazon EMR release associated with the application.
 - `type`: The type of application you want to start, such as Spark or Hive.
 
 # Optional Parameters
@@ -186,8 +186,12 @@ end
     get_dashboard_for_job_run(application_id, job_run_id)
     get_dashboard_for_job_run(application_id, job_run_id, params::Dict{String,<:Any})
 
-Returns a URL to access the job run dashboard. The generated URL is valid for one hour,
-after which you must invoke the API again to generate a new URL.
+Creates and returns a URL that you can use to access the application UIs for a job run. For
+jobs in a running state, the application UI is a live user interface such as the Spark or
+Tez web UI. For completed jobs, the application UI is a persistent application user
+interface such as the Spark History Server or persistent Tez UI.  The URL is valid for one
+hour after you generate it. To access the application UI after that hour elapses, you must
+invoke the API again to generate a new URL.
 
 # Arguments
 - `application_id`: The ID of the application.
@@ -594,6 +598,8 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   This is cumulative across all workers at any given point in time during the lifespan of the
   application. No new resources will be created once any one of the defined limits is hit.
 - `"networkConfiguration"`:
+- `"releaseLabel"`: The Amazon EMR release label for the application. You can change the
+  release label to use a different release of Amazon EMR.
 - `"workerTypeSpecifications"`: The key-value pairs that specify worker type to
   WorkerTypeSpecificationInput. This parameter must contain all valid worker types for a
   Spark or Hive application. Valid worker types include Driver and Executor for Spark

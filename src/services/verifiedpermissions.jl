@@ -161,7 +161,9 @@ end
     create_policy_store(validation_settings)
     create_policy_store(validation_settings, params::Dict{String,<:Any})
 
-Creates a policy store. A policy store is a container for policy resources.
+Creates a policy store. A policy store is a container for policy resources.  Although Cedar
+supports multiple namespaces, Verified Permissions currently supports only one namespace
+per policy store.
 
 # Arguments
 - `validation_settings`: Specifies the validation setting for this policy store. Currently,
@@ -682,8 +684,10 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   principal authorized to perform this action on the resource?
 - `"context"`: Specifies additional context that can be used to make more granular
   authorization decisions.
-- `"entities"`: Specifies the list of entities and their associated attributes that
-  Verified Permissions can examine when evaluating the policies.
+- `"entities"`: Specifies the list of resources and principals and their associated
+  attributes that Verified Permissions can examine when evaluating the policies.   You can
+  include only principal and resource entities in this parameter; you can't include actions.
+  You must specify actions in the schema.
 - `"principal"`: Specifies the principal for which the authorization decision is to be made.
 - `"resource"`: Specifies the resource for which the authorization decision is to be made.
 """
@@ -735,8 +739,10 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   authorized to perform this action on the specified resource.
 - `"context"`: Specifies additional context that can be used to make more granular
   authorization decisions.
-- `"entities"`: Specifies the list of entities and their associated attributes that
-  Verified Permissions can examine when evaluating the policies.
+- `"entities"`: Specifies the list of resources and principals and their associated
+  attributes that Verified Permissions can examine when evaluating the policies.   You can
+  include only principal and resource entities in this parameter; you can't include actions.
+  You must specify actions in the schema.
 - `"identityToken"`: Specifies an identity token for the principal to be authorized. This
   token is provided to you by the identity provider (IdP) associated with the specified
   identity source. You must specify either an AccessToken or an IdentityToken, but not both.

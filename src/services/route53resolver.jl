@@ -437,6 +437,75 @@ function create_firewall_rule_group(
 end
 
 """
+    create_outpost_resolver(creator_request_id, name, outpost_arn, preferred_instance_type)
+    create_outpost_resolver(creator_request_id, name, outpost_arn, preferred_instance_type, params::Dict{String,<:Any})
+
+Creates an Route 53 Resolver on an Outpost.
+
+# Arguments
+- `creator_request_id`: A unique string that identifies the request and that allows failed
+  requests to be retried without the risk of running the operation twice.   CreatorRequestId
+  can be any unique string, for example, a date/time stamp.
+- `name`: A friendly name that lets you easily find a configuration in the Resolver
+  dashboard in the Route 53 console.
+- `outpost_arn`: The Amazon Resource Name (ARN) of the Outpost. If you specify this, you
+  must also specify a value for the PreferredInstanceType.
+- `preferred_instance_type`:  The Amazon EC2 instance type. If you specify this, you must
+  also specify a value for the OutpostArn.
+
+# Optional Parameters
+Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"InstanceCount"`: Number of Amazon EC2 instances for the Resolver on Outpost. The
+  default and minimal value is 4.
+- `"Tags"`:  A string that helps identify the Route 53 Resolvers on Outpost.
+"""
+function create_outpost_resolver(
+    CreatorRequestId,
+    Name,
+    OutpostArn,
+    PreferredInstanceType;
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return route53resolver(
+        "CreateOutpostResolver",
+        Dict{String,Any}(
+            "CreatorRequestId" => CreatorRequestId,
+            "Name" => Name,
+            "OutpostArn" => OutpostArn,
+            "PreferredInstanceType" => PreferredInstanceType,
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function create_outpost_resolver(
+    CreatorRequestId,
+    Name,
+    OutpostArn,
+    PreferredInstanceType,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return route53resolver(
+        "CreateOutpostResolver",
+        Dict{String,Any}(
+            mergewith(
+                _merge,
+                Dict{String,Any}(
+                    "CreatorRequestId" => CreatorRequestId,
+                    "Name" => Name,
+                    "OutpostArn" => OutpostArn,
+                    "PreferredInstanceType" => PreferredInstanceType,
+                ),
+                params,
+            ),
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
     create_resolver_endpoint(creator_request_id, direction, ip_addresses, security_group_ids)
     create_resolver_endpoint(creator_request_id, direction, ip_addresses, security_group_ids, params::Dict{String,<:Any})
 
@@ -466,7 +535,11 @@ service for a VPC to your network.
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
 - `"Name"`: A friendly name that lets you easily find a configuration in the Resolver
   dashboard in the Route 53 console.
-- `"ResolverEndpointType"`:  For the endpoint type you can choose either IPv4, IPv6. or
+- `"OutpostArn"`: The Amazon Resource Name (ARN) of the Outpost. If you specify this, you
+  must also specify a value for the PreferredInstanceType.
+- `"PreferredInstanceType"`: The instance type. If you specify this, you must also specify
+  a value for the OutpostArn.
+- `"ResolverEndpointType"`:  For the endpoint type you can choose either IPv4, IPv6, or
   dual-stack. A dual-stack endpoint means that it will resolve via both IPv4 and IPv6. This
   endpoint type is applied to all IP addresses.
 - `"Tags"`: A list of the tag keys and values that you want to associate with the endpoint.
@@ -625,8 +698,8 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   route DNS queries to the IP addresses that you specify in TargetIps.
 - `"Tags"`: A list of the tag keys and values that you want to associate with the endpoint.
 - `"TargetIps"`: The IPs that you want Resolver to forward DNS queries to. You can specify
-  only IPv4 addresses. Separate IP addresses with a space.  TargetIps is available only when
-  the value of Rule type is FORWARD.
+  either Ipv4 or Ipv6 addresses but not both in the same rule. Separate IP addresses with a
+  space.  TargetIps is available only when the value of Rule type is FORWARD.
 """
 function create_resolver_rule(
     CreatorRequestId,
@@ -794,6 +867,35 @@ function delete_firewall_rule_group(
                 params,
             ),
         );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
+    delete_outpost_resolver(id)
+    delete_outpost_resolver(id, params::Dict{String,<:Any})
+
+Deletes a Resolver on the Outpost.
+
+# Arguments
+- `id`: A unique string that identifies the Resolver on the Outpost.
+
+"""
+function delete_outpost_resolver(Id; aws_config::AbstractAWSConfig=global_aws_config())
+    return route53resolver(
+        "DeleteOutpostResolver",
+        Dict{String,Any}("Id" => Id);
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function delete_outpost_resolver(
+    Id, params::AbstractDict{String}; aws_config::AbstractAWSConfig=global_aws_config()
+)
+    return route53resolver(
+        "DeleteOutpostResolver",
+        Dict{String,Any}(mergewith(_merge, Dict{String,Any}("Id" => Id), params));
         aws_config=aws_config,
         feature_set=SERVICE_FEATURE_SET,
     )
@@ -1301,6 +1403,36 @@ function get_firewall_rule_group_policy(
     return route53resolver(
         "GetFirewallRuleGroupPolicy",
         Dict{String,Any}(mergewith(_merge, Dict{String,Any}("Arn" => Arn), params));
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
+    get_outpost_resolver(id)
+    get_outpost_resolver(id, params::Dict{String,<:Any})
+
+Gets information about a specified Resolver on the Outpost, such as its instance count and
+type, name, and the current status of the Resolver.
+
+# Arguments
+- `id`: The ID of the Resolver on the Outpost.
+
+"""
+function get_outpost_resolver(Id; aws_config::AbstractAWSConfig=global_aws_config())
+    return route53resolver(
+        "GetOutpostResolver",
+        Dict{String,Any}("Id" => Id);
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function get_outpost_resolver(
+    Id, params::AbstractDict{String}; aws_config::AbstractAWSConfig=global_aws_config()
+)
+    return route53resolver(
+        "GetOutpostResolver",
+        Dict{String,Any}(mergewith(_merge, Dict{String,Any}("Id" => Id), params));
         aws_config=aws_config,
         feature_set=SERVICE_FEATURE_SET,
     )
@@ -1985,6 +2117,37 @@ function list_firewall_rules(
 end
 
 """
+    list_outpost_resolvers()
+    list_outpost_resolvers(params::Dict{String,<:Any})
+
+Lists all the Resolvers on Outposts that were created using the current Amazon Web Services
+account.
+
+# Optional Parameters
+Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"MaxResults"`: The maximum number of Resolvers on the Outpost that you want to return in
+  the response to a ListOutpostResolver request. If you don't specify a value for MaxResults,
+  the request returns up to 100 Resolvers.
+- `"NextToken"`: For the first ListOutpostResolver request, omit this value.
+- `"OutpostArn"`: The Amazon Resource Name (ARN) of the Outpost.
+"""
+function list_outpost_resolvers(; aws_config::AbstractAWSConfig=global_aws_config())
+    return route53resolver(
+        "ListOutpostResolvers"; aws_config=aws_config, feature_set=SERVICE_FEATURE_SET
+    )
+end
+function list_outpost_resolvers(
+    params::AbstractDict{String}; aws_config::AbstractAWSConfig=global_aws_config()
+)
+    return route53resolver(
+        "ListOutpostResolvers",
+        params;
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
     list_resolver_configs()
     list_resolver_configs(params::Dict{String,<:Any})
 
@@ -2451,7 +2614,6 @@ operations that you want the account to be able to perform on the configuration.
   can specify the following operations in the Actions section of the statement:
   route53resolver:AssociateResolverQueryLogConfig
   route53resolver:DisassociateResolverQueryLogConfig
-  route53resolver:ListResolverQueryLogConfigAssociations
   route53resolver:ListResolverQueryLogConfigs    In the Resource section of the statement,
   you specify the ARNs for the query logging configurations that you want to share with the
   account that you specified in Arn.
@@ -2875,6 +3037,41 @@ function update_firewall_rule_group_association(
 end
 
 """
+    update_outpost_resolver(id)
+    update_outpost_resolver(id, params::Dict{String,<:Any})
+
+You can use UpdateOutpostResolver to update the instance count, type, or name of a Resolver
+on an Outpost.
+
+# Arguments
+- `id`: A unique string that identifies Resolver on an Outpost.
+
+# Optional Parameters
+Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"InstanceCount"`: The Amazon EC2 instance count for a Resolver on the Outpost.
+- `"Name"`: Name of the Resolver on the Outpost.
+- `"PreferredInstanceType"`:  Amazon EC2 instance type.
+"""
+function update_outpost_resolver(Id; aws_config::AbstractAWSConfig=global_aws_config())
+    return route53resolver(
+        "UpdateOutpostResolver",
+        Dict{String,Any}("Id" => Id);
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function update_outpost_resolver(
+    Id, params::AbstractDict{String}; aws_config::AbstractAWSConfig=global_aws_config()
+)
+    return route53resolver(
+        "UpdateOutpostResolver",
+        Dict{String,Any}(mergewith(_merge, Dict{String,Any}("Id" => Id), params));
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
     update_resolver_config(autodefined_reverse_flag, resource_id)
     update_resolver_config(autodefined_reverse_flag, resource_id, params::Dict{String,<:Any})
 
@@ -2987,8 +3184,10 @@ only update between IPV4 and DUALSTACK, IPV6 endpoint type can't be updated to o
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
 - `"Name"`: The name of the Resolver endpoint that you want to update.
 - `"ResolverEndpointType"`:  Specifies the endpoint type for what type of IP address the
-  endpoint uses to forward DNS queries.
-- `"UpdateIpAddresses"`:  Updates the Resolver endpoint type to IpV4, Ipv6, or dual-stack.
+  endpoint uses to forward DNS queries.  Updating to IPV6 type isn't currently supported.
+- `"UpdateIpAddresses"`:  Specifies the IPv6 address when you update the Resolver endpoint
+  from IPv4 to dual-stack. If you don't specify an IPv6 address, one will be automatically
+  chosen from your subnet.
 """
 function update_resolver_endpoint(
     ResolverEndpointId; aws_config::AbstractAWSConfig=global_aws_config()

@@ -830,6 +830,33 @@ function delete_tags(
 end
 
 """
+    describe_account_configuration()
+    describe_account_configuration(params::Dict{String,<:Any})
+
+Get account configuration
+
+"""
+function describe_account_configuration(; aws_config::AbstractAWSConfig=global_aws_config())
+    return medialive(
+        "GET",
+        "/prod/accountConfiguration";
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function describe_account_configuration(
+    params::AbstractDict{String}; aws_config::AbstractAWSConfig=global_aws_config()
+)
+    return medialive(
+        "GET",
+        "/prod/accountConfiguration",
+        params;
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
     describe_channel(channel_id)
     describe_channel(channel_id, params::Dict{String,<:Any})
 
@@ -1167,6 +1194,53 @@ function describe_schedule(
         "GET",
         "/prod/channels/$(channelId)/schedule",
         params;
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
+    describe_thumbnails(channel_id, pipeline_id, thumbnail_type)
+    describe_thumbnails(channel_id, pipeline_id, thumbnail_type, params::Dict{String,<:Any})
+
+Describe the latest thumbnails data.
+
+# Arguments
+- `channel_id`: Unique ID of the channel
+- `pipeline_id`: Pipeline ID (\"0\" or \"1\")
+- `thumbnail_type`: thumbnail type
+
+"""
+function describe_thumbnails(
+    channelId, pipelineId, thumbnailType; aws_config::AbstractAWSConfig=global_aws_config()
+)
+    return medialive(
+        "GET",
+        "/prod/channels/$(channelId)/thumbnails",
+        Dict{String,Any}("pipelineId" => pipelineId, "thumbnailType" => thumbnailType);
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function describe_thumbnails(
+    channelId,
+    pipelineId,
+    thumbnailType,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return medialive(
+        "GET",
+        "/prod/channels/$(channelId)/thumbnails",
+        Dict{String,Any}(
+            mergewith(
+                _merge,
+                Dict{String,Any}(
+                    "pipelineId" => pipelineId, "thumbnailType" => thumbnailType
+                ),
+                params,
+            ),
+        );
         aws_config=aws_config,
         feature_set=SERVICE_FEATURE_SET,
     )
@@ -1848,6 +1922,36 @@ function transfer_input_device(
 end
 
 """
+    update_account_configuration()
+    update_account_configuration(params::Dict{String,<:Any})
+
+Update account configuration
+
+# Optional Parameters
+Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"accountConfiguration"`:
+"""
+function update_account_configuration(; aws_config::AbstractAWSConfig=global_aws_config())
+    return medialive(
+        "PUT",
+        "/prod/accountConfiguration";
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function update_account_configuration(
+    params::AbstractDict{String}; aws_config::AbstractAWSConfig=global_aws_config()
+)
+    return medialive(
+        "PUT",
+        "/prod/accountConfiguration",
+        params;
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
     update_channel(channel_id)
     update_channel(channel_id, params::Dict{String,<:Any})
 
@@ -1995,6 +2099,7 @@ Updates the parameters for the input device.
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"availabilityZone"`: The Availability Zone you want associated with this input device.
 - `"hdDeviceSettings"`: The settings that you want to apply to the HD input device.
 - `"name"`: The name that you assigned to this input device (not the unique ID).
 - `"uhdDeviceSettings"`: The settings that you want to apply to the UHD input device.

@@ -8,13 +8,12 @@ using AWS.UUIDs
     create_connection(connection_name)
     create_connection(connection_name, params::Dict{String,<:Any})
 
-Creates a connection that can then be given to other AWS services like CodePipeline so that
-it can access third-party code repositories. The connection is in pending status until the
-third-party connection handshake is completed from the console.
+Creates a connection that can then be given to other Amazon Web Services services like
+CodePipeline so that it can access third-party code repositories. The connection is in
+pending status until the third-party connection handshake is completed from the console.
 
 # Arguments
-- `connection_name`: The name of the connection to be created. The name must be unique in
-  the calling AWS account.
+- `connection_name`: The name of the connection to be created.
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
@@ -60,8 +59,7 @@ that provider.  A host created through the CLI or the SDK is in `PENDING` status
 default. You can make its status `AVAILABLE` by setting up the host in the console.
 
 # Arguments
-- `name`: The name of the host to be created. The name must be unique in the calling AWS
-  account.
+- `name`: The name of the host to be created.
 - `provider_endpoint`: The endpoint of the infrastructure to be represented by the host
   after it is created.
 - `provider_type`: The name of the installed provider to be associated with your
@@ -379,7 +377,7 @@ end
     untag_resource(resource_arn, tag_keys)
     untag_resource(resource_arn, tag_keys, params::Dict{String,<:Any})
 
-Removes tags from an AWS resource.
+Removes tags from an Amazon Web Services resource.
 
 # Arguments
 - `resource_arn`: The Amazon Resource Name (ARN) of the resource to remove tags from.

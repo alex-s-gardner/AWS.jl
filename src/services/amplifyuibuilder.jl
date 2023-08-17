@@ -64,7 +64,7 @@ end
     create_form(app_id, environment_name, form_to_create)
     create_form(app_id, environment_name, form_to_create, params::Dict{String,<:Any})
 
-Creates a new form for an Amplify.
+Creates a new form for an Amplify app.
 
 # Arguments
 - `app_id`: The unique ID of the Amplify app to associate with the form.
@@ -870,7 +870,7 @@ end
     start_codegen_job(app_id, codegen_job_to_create, environment_name)
     start_codegen_job(app_id, codegen_job_to_create, environment_name, params::Dict{String,<:Any})
 
-Starts a code generation job for for a specified Amplify app and backend environment.
+Starts a code generation job for a specified Amplify app and backend environment.
 
 # Arguments
 - `app_id`: The unique ID for the Amplify app.

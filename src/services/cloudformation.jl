@@ -342,6 +342,18 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
 - `"NotificationARNs"`: The Amazon Resource Names (ARNs) of Amazon Simple Notification
   Service (Amazon SNS) topics that CloudFormation associates with the stack. To remove all
   associated notification topics, specify an empty list.
+- `"OnStackFailure"`: Determines what action will be taken if stack creation fails. If this
+  parameter is specified, the DisableRollback parameter to the ExecuteChangeSet API operation
+  must not be specified. This must be one of these values:    DELETE - Deletes the change set
+  if the stack creation fails. This is only valid when the ChangeSetType parameter is set to
+  CREATE. If the deletion of the stack fails, the status of the stack is DELETE_FAILED.
+  DO_NOTHING - if the stack creation fails, do nothing. This is equivalent to specifying true
+  for the DisableRollback parameter to the ExecuteChangeSet API operation.    ROLLBACK - if
+  the stack creation fails, roll back the stack. This is equivalent to specifying false for
+  the DisableRollback parameter to the ExecuteChangeSet API operation.   For nested stacks,
+  when the OnStackFailure parameter is set to DELETE for the change set for the parent stack,
+  any failure in a child stack will cause the parent stack creation to fail and all stacks to
+  be deleted.
 - `"Parameters"`: A list of Parameter structures that specify input parameters for the
   change set. For more information, see the Parameter data type.
 - `"ResourceTypes"`: The template resource types that you have permissions to work with if
@@ -495,6 +507,11 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   Identity and Access Management (IAM) uses this parameter for CloudFormation-specific
   condition keys in IAM policies. For more information, see Controlling Access with Identity
   and Access Management.
+- `"RetainExceptOnCreate"`: This deletion policy deletes newly created resources, but
+  retains existing resources, when a stack operation is rolled back. This ensures new, empty,
+  and unused resources are deleted, while critical resources and their data are retained.
+  RetainExceptOnCreate can be specified for any resource that supports the  DeletionPolicy
+  attribute.
 - `"RoleARN"`: The Amazon Resource Name (ARN) of an Identity and Access Management (IAM)
   role that CloudFormation assumes to create the stack. CloudFormation uses the role's
   credentials to make calls on your behalf. CloudFormation always uses this role for all
@@ -2044,7 +2061,17 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   attempting to execute a change set to update a stack with the same name. You might retry
   ExecuteChangeSet requests to ensure that CloudFormation successfully received them.
 - `"DisableRollback"`: Preserves the state of previously provisioned resources when an
-  operation fails. Default: True
+  operation fails. This parameter can't be specified when the OnStackFailure parameter to the
+  CreateChangeSet API operation was specified.    True - if the stack creation fails, do
+  nothing. This is equivalent to specifying DO_NOTHING for the OnStackFailure parameter to
+  the CreateChangeSet API operation.    False - if the stack creation fails, roll back the
+  stack. This is equivalent to specifying ROLLBACK for the OnStackFailure parameter to the
+  CreateChangeSet API operation.   Default: True
+- `"RetainExceptOnCreate"`: This deletion policy deletes newly created resources, but
+  retains existing resources, when a stack operation is rolled back. This ensures new, empty,
+  and unused resources are deleted, while critical resources and their data are retained.
+  RetainExceptOnCreate can be specified for any resource that supports the  DeletionPolicy
+  attribute.
 - `"StackName"`: If you specified the name of a change set, specify the stack name or
   Amazon Resource Name (ARN) that's associated with the change set you want to execute.
 """
@@ -2179,6 +2206,7 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   and a maximum length of 51,200 bytes. For more information about templates, see Template
   anatomy in the CloudFormation User Guide. Conditional: You must specify only one of the
   following parameters: StackName, StackSetName, TemplateBody, or TemplateURL.
+- `"TemplateSummaryConfig"`: Specifies options for the GetTemplateSummary API action.
 - `"TemplateURL"`: Location of file containing the template body. The URL must point to a
   template (max size: 460,800 bytes) that's located in an Amazon S3 bucket or a Systems
   Manager document. For more information about templates, see Template anatomy in the
@@ -2359,6 +2387,93 @@ function list_imports(
         "ListImports",
         Dict{String,Any}(
             mergewith(_merge, Dict{String,Any}("ExportName" => ExportName), params)
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
+    list_stack_instance_resource_drifts(operation_id, stack_instance_account, stack_instance_region, stack_set_name)
+    list_stack_instance_resource_drifts(operation_id, stack_instance_account, stack_instance_region, stack_set_name, params::Dict{String,<:Any})
+
+Returns drift information for resources in a stack instance.
+ListStackInstanceResourceDrifts returns drift information for the most recent drift
+detection operation. If an operation is in progress, it may only return partial results.
+
+# Arguments
+- `operation_id`: The unique ID of the drift operation.
+- `stack_instance_account`: The name of the Amazon Web Services account that you want to
+  list resource drifts for.
+- `stack_instance_region`: The name of the Region where you want to list resource drifts.
+- `stack_set_name`: The name or unique ID of the stack set that you want to list drifted
+  resources for.
+
+# Optional Parameters
+Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"CallAs"`: [Service-managed permissions] Specifies whether you are acting as an account
+  administrator in the organization's management account or as a delegated administrator in a
+  member account. By default, SELF is specified. Use SELF for stack sets with self-managed
+  permissions.   If you are signed in to the management account, specify SELF.   If you are
+  signed in to a delegated administrator account, specify DELEGATED_ADMIN. Your Amazon Web
+  Services account must be registered as a delegated administrator in the management account.
+  For more information, see Register a delegated administrator in the CloudFormation User
+  Guide.
+- `"MaxResults"`: The maximum number of results to be returned with a single call. If the
+  number of available results exceeds this maximum, the response includes a NextToken value
+  that you can assign to the NextToken request parameter to get the next set of results.
+- `"NextToken"`: If the previous paginated request didn't return all of the remaining
+  results, the response object's NextToken parameter value is set to a token. To retrieve the
+  next set of results, call this action again and assign that token to the request object's
+  NextToken parameter. If there are no remaining results, the previous response object's
+  NextToken parameter is set to null.
+- `"StackInstanceResourceDriftStatuses"`: The resource drift status of the stack instance.
+     DELETED: The resource differs from its expected template configuration in that the
+  resource has been deleted.    MODIFIED: One or more resource properties differ from their
+  expected template values.    IN_SYNC: The resource's actual configuration matches its
+  expected template configuration.    NOT_CHECKED: CloudFormation doesn't currently return
+  this value.
+"""
+function list_stack_instance_resource_drifts(
+    OperationId,
+    StackInstanceAccount,
+    StackInstanceRegion,
+    StackSetName;
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return cloudformation(
+        "ListStackInstanceResourceDrifts",
+        Dict{String,Any}(
+            "OperationId" => OperationId,
+            "StackInstanceAccount" => StackInstanceAccount,
+            "StackInstanceRegion" => StackInstanceRegion,
+            "StackSetName" => StackSetName,
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function list_stack_instance_resource_drifts(
+    OperationId,
+    StackInstanceAccount,
+    StackInstanceRegion,
+    StackSetName,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return cloudformation(
+        "ListStackInstanceResourceDrifts",
+        Dict{String,Any}(
+            mergewith(
+                _merge,
+                Dict{String,Any}(
+                    "OperationId" => OperationId,
+                    "StackInstanceAccount" => StackInstanceAccount,
+                    "StackInstanceRegion" => StackInstanceRegion,
+                    "StackSetName" => StackSetName,
+                ),
+                params,
+            ),
         );
         aws_config=aws_config,
         feature_set=SERVICE_FEATURE_SET,
@@ -3029,6 +3144,11 @@ UPDATE_ROLLBACK_COMPLETE     IMPORT_COMPLETE     IMPORT_ROLLBACK_COMPLETE
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
 - `"ClientRequestToken"`: A unique identifier for this RollbackStack request.
+- `"RetainExceptOnCreate"`: This deletion policy deletes newly created resources, but
+  retains existing resources, when a stack operation is rolled back. This ensures new, empty,
+  and unused resources are deleted, while critical resources and their data are retained.
+  RetainExceptOnCreate can be specified for any resource that supports the  DeletionPolicy
+  attribute.
 - `"RoleARN"`: The Amazon Resource Name (ARN) of an Identity and Access Management role
   that CloudFormation assumes to rollback the stack.
 """
@@ -3440,6 +3560,11 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   all resource types. Identity and Access Management (IAM) uses this parameter for
   CloudFormation-specific condition keys in IAM policies. For more information, see
   Controlling Access with Identity and Access Management.
+- `"RetainExceptOnCreate"`: This deletion policy deletes newly created resources, but
+  retains existing resources, when a stack operation is rolled back. This ensures new, empty,
+  and unused resources are deleted, while critical resources and their data are retained.
+  RetainExceptOnCreate can be specified for any resource that supports the  DeletionPolicy
+  attribute.
 - `"RoleARN"`: The Amazon Resource Name (ARN) of an Identity and Access Management (IAM)
   role that CloudFormation assumes to update the stack. CloudFormation uses the role's
   credentials to make calls on your behalf. CloudFormation always uses this role for all

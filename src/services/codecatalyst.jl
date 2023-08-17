@@ -168,6 +168,49 @@ function create_project(
 end
 
 """
+    create_source_repository(name, project_name, space_name)
+    create_source_repository(name, project_name, space_name, params::Dict{String,<:Any})
+
+Creates an empty Git-based source repository in a specified project. The repository is
+created with an initial empty commit with a default branch named main.
+
+# Arguments
+- `name`: The name of the source repository. For more information about name requirements,
+  see Quotas for source repositories.
+- `project_name`: The name of the project in the space.
+- `space_name`: The name of the space.
+
+# Optional Parameters
+Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"description"`: The description of the source repository.
+"""
+function create_source_repository(
+    name, projectName, spaceName; aws_config::AbstractAWSConfig=global_aws_config()
+)
+    return codecatalyst(
+        "PUT",
+        "/v1/spaces/$(spaceName)/projects/$(projectName)/sourceRepositories/$(name)";
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function create_source_repository(
+    name,
+    projectName,
+    spaceName,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return codecatalyst(
+        "PUT",
+        "/v1/spaces/$(spaceName)/projects/$(projectName)/sourceRepositories/$(name)",
+        params;
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
     create_source_repository_branch(name, project_name, source_repository_name, space_name)
     create_source_repository_branch(name, project_name, source_repository_name, space_name, params::Dict{String,<:Any})
 
@@ -289,6 +332,111 @@ function delete_dev_environment(
 end
 
 """
+    delete_project(name, space_name)
+    delete_project(name, space_name, params::Dict{String,<:Any})
+
+Deletes a project in a space.
+
+# Arguments
+- `name`: The name of the project in the space. To retrieve a list of project names, use
+  ListProjects.
+- `space_name`: The name of the space.
+
+"""
+function delete_project(name, spaceName; aws_config::AbstractAWSConfig=global_aws_config())
+    return codecatalyst(
+        "DELETE",
+        "/v1/spaces/$(spaceName)/projects/$(name)";
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function delete_project(
+    name,
+    spaceName,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return codecatalyst(
+        "DELETE",
+        "/v1/spaces/$(spaceName)/projects/$(name)",
+        params;
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
+    delete_source_repository(name, project_name, space_name)
+    delete_source_repository(name, project_name, space_name, params::Dict{String,<:Any})
+
+Deletes a source repository in Amazon CodeCatalyst. You cannot use this API to delete a
+linked repository. It can only be used to delete a Amazon CodeCatalyst source repository.
+
+# Arguments
+- `name`: The name of the source repository.
+- `project_name`: The name of the project in the space.
+- `space_name`: The name of the space.
+
+"""
+function delete_source_repository(
+    name, projectName, spaceName; aws_config::AbstractAWSConfig=global_aws_config()
+)
+    return codecatalyst(
+        "DELETE",
+        "/v1/spaces/$(spaceName)/projects/$(projectName)/sourceRepositories/$(name)";
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function delete_source_repository(
+    name,
+    projectName,
+    spaceName,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return codecatalyst(
+        "DELETE",
+        "/v1/spaces/$(spaceName)/projects/$(projectName)/sourceRepositories/$(name)",
+        params;
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
+    delete_space(name)
+    delete_space(name, params::Dict{String,<:Any})
+
+Deletes a space.  Deleting a space cannot be undone. Additionally, since space names must
+be unique across Amazon CodeCatalyst, you cannot reuse names of deleted spaces.
+
+# Arguments
+- `name`: The name of the space. To retrieve a list of space names, use ListSpaces.
+
+"""
+function delete_space(name; aws_config::AbstractAWSConfig=global_aws_config())
+    return codecatalyst(
+        "DELETE",
+        "/v1/spaces/$(name)";
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function delete_space(
+    name, params::AbstractDict{String}; aws_config::AbstractAWSConfig=global_aws_config()
+)
+    return codecatalyst(
+        "DELETE",
+        "/v1/spaces/$(name)",
+        params;
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
     get_dev_environment(id, project_name, space_name)
     get_dev_environment(id, project_name, space_name, params::Dict{String,<:Any})
 
@@ -356,6 +504,44 @@ function get_project(
     return codecatalyst(
         "GET",
         "/v1/spaces/$(spaceName)/projects/$(name)",
+        params;
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
+    get_source_repository(name, project_name, space_name)
+    get_source_repository(name, project_name, space_name, params::Dict{String,<:Any})
+
+Returns information about a source repository.
+
+# Arguments
+- `name`: The name of the source repository.
+- `project_name`: The name of the project in the space.
+- `space_name`: The name of the space.
+
+"""
+function get_source_repository(
+    name, projectName, spaceName; aws_config::AbstractAWSConfig=global_aws_config()
+)
+    return codecatalyst(
+        "GET",
+        "/v1/spaces/$(spaceName)/projects/$(projectName)/sourceRepositories/$(name)";
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function get_source_repository(
+    name,
+    projectName,
+    spaceName,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return codecatalyst(
+        "GET",
+        "/v1/spaces/$(spaceName)/projects/$(projectName)/sourceRepositories/$(name)",
         params;
         aws_config=aws_config,
         feature_set=SERVICE_FEATURE_SET,
@@ -1056,6 +1242,76 @@ function update_dev_environment(
     return codecatalyst(
         "PATCH",
         "/v1/spaces/$(spaceName)/projects/$(projectName)/devEnvironments/$(id)",
+        params;
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
+    update_project(name, space_name)
+    update_project(name, space_name, params::Dict{String,<:Any})
+
+Changes one or more values for a project.
+
+# Arguments
+- `name`: The name of the project.
+- `space_name`: The name of the space.
+
+# Optional Parameters
+Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"description"`: The description of the project.
+"""
+function update_project(name, spaceName; aws_config::AbstractAWSConfig=global_aws_config())
+    return codecatalyst(
+        "PATCH",
+        "/v1/spaces/$(spaceName)/projects/$(name)";
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function update_project(
+    name,
+    spaceName,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return codecatalyst(
+        "PATCH",
+        "/v1/spaces/$(spaceName)/projects/$(name)",
+        params;
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
+    update_space(name)
+    update_space(name, params::Dict{String,<:Any})
+
+Changes one or more values for a space.
+
+# Arguments
+- `name`: The name of the space.
+
+# Optional Parameters
+Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"description"`: The description of the space.
+"""
+function update_space(name; aws_config::AbstractAWSConfig=global_aws_config())
+    return codecatalyst(
+        "PATCH",
+        "/v1/spaces/$(name)";
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function update_space(
+    name, params::AbstractDict{String}; aws_config::AbstractAWSConfig=global_aws_config()
+)
+    return codecatalyst(
+        "PATCH",
+        "/v1/spaces/$(name)",
         params;
         aws_config=aws_config,
         feature_set=SERVICE_FEATURE_SET,

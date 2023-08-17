@@ -75,7 +75,8 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   implementation, Kinesis Video Streams does not use this name.
 - `"KmsKeyId"`: The ID of the Key Management Service (KMS) key that you want Kinesis Video
   Streams to use to encrypt stream data. If no key ID is specified, the default, Kinesis
-  Video-managed key (aws/kinesisvideo) is used.  For more information, see DescribeKey.
+  Video-managed key (Amazon Web Services/kinesisvideo) is used.  For more information, see
+  DescribeKey.
 - `"MediaType"`: The media type of the stream. Consumers of the stream can use this
   information when processing the stream. For more information about media types, see Media
   Types. If you choose to specify the MediaType, see Naming Requirements for guidelines.
@@ -104,6 +105,45 @@ function create_stream(
         Dict{String,Any}(
             mergewith(_merge, Dict{String,Any}("StreamName" => StreamName), params)
         );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
+    delete_edge_configuration()
+    delete_edge_configuration(params::Dict{String,<:Any})
+
+An asynchronous API that deletes a stream’s existing edge configuration, as well as the
+corresponding media from the Edge Agent. When you invoke this API, the sync status is set
+to DELETING. A deletion process starts, in which active edge jobs are stopped and all media
+is deleted from the edge device. The time to delete varies, depending on the total amount
+of stored media. If the deletion process fails, the sync status changes to DELETE_FAILED.
+You will need to re-try the deletion. When the deletion process has completed successfully,
+the edge configuration is no longer accessible.
+
+# Optional Parameters
+Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"StreamARN"`: The Amazon Resource Name (ARN) of the stream. Specify either the
+  StreamName or the StreamARN.
+- `"StreamName"`: The name of the stream from which to delete the edge configuration.
+  Specify either the StreamName or the StreamARN.
+"""
+function delete_edge_configuration(; aws_config::AbstractAWSConfig=global_aws_config())
+    return kinesis_video(
+        "POST",
+        "/deleteEdgeConfiguration";
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function delete_edge_configuration(
+    params::AbstractDict{String}; aws_config::AbstractAWSConfig=global_aws_config()
+)
+    return kinesis_video(
+        "POST",
+        "/deleteEdgeConfiguration",
+        params;
         aws_config=aws_config,
         feature_set=SERVICE_FEATURE_SET,
     )
@@ -205,8 +245,10 @@ end
     describe_edge_configuration(params::Dict{String,<:Any})
 
 Describes a stream’s edge configuration that was set using the
-StartEdgeConfigurationUpdate API. Use this API to get the status of the configuration if
-the configuration is in sync with the Edge Agent.
+StartEdgeConfigurationUpdate API and the latest status of the edge agent's recorder and
+uploader jobs. Use this API to get the status of the configuration to determine if the
+configuration is in sync with the Edge Agent. Use this API to evaluate the health of the
+Edge Agent.
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
@@ -275,9 +317,8 @@ end
     describe_mapped_resource_configuration()
     describe_mapped_resource_configuration(params::Dict{String,<:Any})
 
-Returns the most current information about the stream. Either streamName or streamARN
-should be provided in the input. Returns the most current information about the stream. The
-streamName or streamARN should be provided in the input.
+Returns the most current information about the stream. The streamName or streamARN should
+be provided in the input.
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
@@ -525,6 +566,52 @@ function get_signaling_channel_endpoint(
         "/getSignalingChannelEndpoint",
         Dict{String,Any}(
             mergewith(_merge, Dict{String,Any}("ChannelARN" => ChannelARN), params)
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
+    list_edge_agent_configurations(hub_device_arn)
+    list_edge_agent_configurations(hub_device_arn, params::Dict{String,<:Any})
+
+Returns an array of edge configurations associated with the specified Edge Agent. In the
+request, you must specify the Edge Agent HubDeviceArn.
+
+# Arguments
+- `hub_device_arn`: The \"Internet of Things (IoT) Thing\" Arn of the edge agent.
+
+# Optional Parameters
+Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"MaxResults"`: The maximum number of edge configurations to return in the response. The
+  default is 5.
+- `"NextToken"`: If you specify this parameter, when the result of a
+  ListEdgeAgentConfigurations operation is truncated, the call returns the NextToken in the
+  response. To get another batch of edge configurations, provide this token in your next
+  request.
+"""
+function list_edge_agent_configurations(
+    HubDeviceArn; aws_config::AbstractAWSConfig=global_aws_config()
+)
+    return kinesis_video(
+        "POST",
+        "/listEdgeAgentConfigurations",
+        Dict{String,Any}("HubDeviceArn" => HubDeviceArn);
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function list_edge_agent_configurations(
+    HubDeviceArn,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return kinesis_video(
+        "POST",
+        "/listEdgeAgentConfigurations",
+        Dict{String,Any}(
+            mergewith(_merge, Dict{String,Any}("HubDeviceArn" => HubDeviceArn), params)
         );
         aws_config=aws_config,
         feature_set=SERVICE_FEATURE_SET,
@@ -1030,7 +1117,10 @@ end
 Associates a SignalingChannel to a stream to store the media. There are two signaling modes
 that can specified :   If the StorageStatus is disabled, no data will be stored, and the
 StreamARN parameter will not be needed.    If the StorageStatus is enabled, the data will
-be stored in the StreamARN provided.
+be stored in the StreamARN provided.     If StorageStatus is enabled, direct peer-to-peer
+(master-viewer) connections no longer occur. Peers connect directly to the storage session.
+You must call the JoinStorageSession API to trigger an SDP offer send and establish a
+connection between a peer and the storage session.
 
 # Arguments
 - `channel_arn`: The Amazon Resource Name (ARN) of the channel.

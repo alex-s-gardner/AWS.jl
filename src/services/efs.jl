@@ -16,10 +16,14 @@ exposed as the access point's root directory. Applications using the access poin
 access data in the application's own directory and any subdirectories. To learn more, see
 Mounting a file system using EFS access points.  If multiple requests to create access
 points on the same file system are sent in quick succession, and the file system is near
-the limit of 1000 access points, you may experience a throttling response for these
+the limit of 1,000 access points, you may experience a throttling response for these
 requests. This is to ensure that the file system does not exceed the stated access point
 limit.  This operation requires permissions for the elasticfilesystem:CreateAccessPoint
-action.
+action. Access points can be tagged on creation. If tags are specified in the creation
+action, IAM performs additional authorization on the elasticfilesystem:TagResource action
+to verify if users have permissions to create tags. Therefore, you must grant explicit
+permissions to use the elasticfilesystem:TagResource action. For more information, see
+Granting permissions to tag resources during creation.
 
 # Arguments
 - `client_token`: A string of up to 64 ASCII characters that Amazon EFS uses to ensure
@@ -110,8 +114,13 @@ the file system using the ThroughputMode parameter. After the file system is ful
 Amazon EFS sets its lifecycle state to available, at which point you can create one or more
 mount targets for the file system in your VPC. For more information, see CreateMountTarget.
 You mount your Amazon EFS file system on an EC2 instances in your VPC by using the mount
-target. For more information, see Amazon EFS: How it Works.   This operation requires
-permissions for the elasticfilesystem:CreateFileSystem action.
+target. For more information, see Amazon EFS: How it Works.  This operation requires
+permissions for the elasticfilesystem:CreateFileSystem action.  File systems can be tagged
+on creation. If tags are specified in the creation action, IAM performs additional
+authorization on the elasticfilesystem:TagResource action to verify if users have
+permissions to create tags. Therefore, you must grant explicit permissions to use the
+elasticfilesystem:TagResource action. For more information, see Granting permissions to tag
+resources during creation.
 
 # Arguments
 - `creation_token`: A string of up to 64 ASCII characters. Amazon EFS uses this to ensure

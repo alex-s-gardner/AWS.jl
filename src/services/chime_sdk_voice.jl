@@ -191,6 +191,9 @@ must use the Amazon Chime SDK SIP media application dial-in product type.
 - `e164_phone_numbers`: List of phone numbers, in E.164 format.
 - `product_type`: The phone number product type.
 
+# Optional Parameters
+Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"Name"`: Specifies the name assigned to one or more phone numbers.
 """
 function create_phone_number_order(
     E164PhoneNumbers, ProductType; aws_config::AbstractAWSConfig=global_aws_config()
@@ -3205,6 +3208,7 @@ names must be complete before you can request another update.
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
 - `"CallingName"`: The outbound calling name associated with the phone number.
+- `"Name"`: Specifies the name assigned to one or more phone numbers.
 - `"ProductType"`: The product type.
 """
 function update_phone_number(

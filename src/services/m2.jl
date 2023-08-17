@@ -62,7 +62,9 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   service also handles deleting the clientToken after it expires.
 - `"description"`: The description of the application.
 - `"kmsKeyId"`: The identifier of a customer managed key.
-- `"roleArn"`: The Amazon Resource Name (ARN) of the role associated with the application.
+- `"roleArn"`: The Amazon Resource Name (ARN) that identifies a role that the application
+  uses to access Amazon Web Services resources that are not part of the application or are in
+  a different Amazon Web Services account.
 - `"tags"`: A list of tags to apply to the application.
 """
 function create_application(
@@ -652,6 +654,30 @@ function get_environment(
     return m2(
         "GET",
         "/environments/$(environmentId)",
+        params;
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
+    get_signed_bluinsights_url()
+    get_signed_bluinsights_url(params::Dict{String,<:Any})
+
+Gets a single sign-on URL that can be used to connect to AWS Blu Insights.
+
+"""
+function get_signed_bluinsights_url(; aws_config::AbstractAWSConfig=global_aws_config())
+    return m2(
+        "GET", "/signed-bi-url"; aws_config=aws_config, feature_set=SERVICE_FEATURE_SET
+    )
+end
+function get_signed_bluinsights_url(
+    params::AbstractDict{String}; aws_config::AbstractAWSConfig=global_aws_config()
+)
+    return m2(
+        "GET",
+        "/signed-bi-url",
         params;
         aws_config=aws_config,
         feature_set=SERVICE_FEATURE_SET,
@@ -1294,7 +1320,8 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   Mainframe Modernization accepts the engineVersion parameter only if
   applyDuringMaintenanceWindow is true. If any parameter other than engineVersion is provided
   in UpdateEnvironmentRequest, it will fail if applyDuringMaintenanceWindow is set to true.
-- `"desiredCapacity"`: The desired capacity for the runtime environment to update.
+- `"desiredCapacity"`: The desired capacity for the runtime environment to update. The
+  minimum possible value is 0 and the maximum is 100.
 - `"engineVersion"`: The version of the runtime engine for the runtime environment.
 - `"instanceType"`: The instance type for the runtime environment to update.
 - `"preferredMaintenanceWindow"`: Configures the maintenance window you want for the

@@ -86,9 +86,9 @@ connection information that players can use to connect to the game server.  To c
 server, identify a game server group. You can also specify a game server ID, although this
 approach bypasses Amazon GameLift FleetIQ placement optimization. Optionally, include game
 data to pass to the game server at the start of a game session, such as a game map or
-player information. Filter options may be included to further restrict how a game server is
-chosen, such as only allowing game servers on ACTIVE instances to be claimed. When a game
-server is successfully claimed, connection information is returned. A claimed game server's
+player information. Add filter options to further restrict how a game server is chosen,
+such as only allowing game servers on ACTIVE instances to be claimed. When a game server is
+successfully claimed, connection information is returned. A claimed game server's
 utilization status remains AVAILABLE while the claim status is set to CLAIMED for up to 60
 seconds. This time period gives the game server time to update its status to UTILIZED after
 players join. If the game server's status is not updated within 60 seconds, the game server
@@ -96,8 +96,8 @@ reverts to unclaimed status and is available to be claimed by another request. T
 time period is a fixed value and is not configurable. If you try to claim a specific game
 server, this request will fail in the following cases:   If the game server utilization
 status is UTILIZED.   If the game server claim status is CLAIMED.   If the game server is
-running on an instance in DRAINING status and provided filter option does not allow placing
-on DRAINING instances.    Learn more   Amazon GameLift FleetIQ Guide
+running on an instance in DRAINING status and the provided filter option does not allow
+placing on DRAINING instances.    Learn more   Amazon GameLift FleetIQ Guide
 
 # Arguments
 - `game_server_group_name`: A unique identifier for the game server group where the game
@@ -878,8 +878,9 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   accept a proposed match, if acceptance is required.
 - `"AdditionalPlayerCount"`: The number of player slots in a match to keep open for future
   players. For example, if the configuration's rule set specifies a match for a single
-  12-person team, and the additional player count is set to 2, only 10 players are selected
-  for the match. This parameter is not used if FlexMatchMode is set to STANDALONE.
+  10-person team, and the additional player count is set to 2, 10 players will be selected
+  for the match and 2 more player slots will be open for future players. This parameter is
+  not used if FlexMatchMode is set to STANDALONE.
 - `"BackfillMode"`: The method used to backfill game sessions that are created with this
   matchmaking configuration. Specify MANUAL when your game manages backfill requests manually
   or does not use the match backfill feature. Specify AUTOMATIC to have Amazon GameLift
@@ -5413,8 +5414,9 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   accept a proposed match, if acceptance is required.
 - `"AdditionalPlayerCount"`: The number of player slots in a match to keep open for future
   players. For example, if the configuration's rule set specifies a match for a single
-  12-person team, and the additional player count is set to 2, only 10 players are selected
-  for the match. This parameter is not used if FlexMatchMode is set to STANDALONE.
+  10-person team, and the additional player count is set to 2, 10 players will be selected
+  for the match and 2 more player slots will be open for future players. This parameter is
+  not used if FlexMatchMode is set to STANDALONE.
 - `"BackfillMode"`: The method that is used to backfill game sessions created with this
   matchmaking configuration. Specify MANUAL when your game manages backfill requests manually
   or does not use the match backfill feature. Specify AUTOMATIC to have GameLift create a

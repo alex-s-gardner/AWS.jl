@@ -591,9 +591,9 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
 - `"Description"`: A description for the FAQ.
 - `"FileFormat"`: The format of the FAQ input file. You can choose between a basic CSV
   format, a CSV format that includes customs attributes in a header, and a JSON format that
-  includes custom attributes. The format must match the format of the file stored in the S3
-  bucket identified in the S3Path parameter. For more information, see Adding questions and
-  answers.
+  includes custom attributes. The default format is CSV. The format must match the format of
+  the file stored in the S3 bucket identified in the S3Path parameter. For more information,
+  see Adding questions and answers.
 - `"LanguageCode"`: The code for a language. This allows you to support a language for the
   FAQ document. English is supported by default. For more information on supported languages,
   including their codes, see Adding documents in languages other than English.
@@ -2473,50 +2473,51 @@ end
     query(index_id)
     query(index_id, params::Dict{String,<:Any})
 
-Searches an active index. Use this API to search your documents using query. The Query API
-enables to do faceted search and to filter results based on document attributes. It also
-enables you to provide user context that Amazon Kendra uses to enforce document access
-control in the search results. Amazon Kendra searches your index for text content and
-question and answer (FAQ) content. By default the response contains three types of results.
-  Relevant passages   Matching FAQs   Relevant documents   You can specify that the query
-return only one type of result using the QueryResultTypeFilter parameter. Each query
-returns the 100 most relevant results.
+Searches an index given an input query. You can configure boosting or relevance tuning at
+the query level to override boosting at the index level, filter based on document
+fields/attributes and faceted search, and filter based on the user or their group access to
+documents. You can also include certain fields in the response that might provide useful
+additional information. A query response contains three types of results.   Relevant
+suggested answers. The answers can be either a text excerpt or table excerpt. The answer
+can be highlighted in the excerpt.   Matching FAQs or questions-answer from your FAQ file.
+ Relevant documents. This result type includes an excerpt of the document with the document
+title. The searched terms can be highlighted in the excerpt.   You can specify that the
+query return only one type of result using the QueryResultTypeFilter parameter. Each query
+returns the 100 most relevant results. If you filter result type to only question-answers,
+a maximum of four results are returned. If you filter result type to only answers, a
+maximum of three results are returned.
 
 # Arguments
-- `index_id`: The identifier of the index to search. The identifier is returned in the
-  response from the CreateIndex API.
+- `index_id`: The identifier of the index for the search.
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
-- `"AttributeFilter"`: Enables filtered searches based on document attributes. You can only
+- `"AttributeFilter"`: Filters search results by document fields/attributes. You can only
   provide one attribute filter; however, the AndAllFilters, NotFilter, and OrAllFilters
-  parameters contain a list of other filters. The AttributeFilter parameter enables you to
+  parameters contain a list of other filters. The AttributeFilter parameter means you can
   create a set of filtering rules that a document must satisfy to be included in the query
   results.
 - `"DocumentRelevanceOverrideConfigurations"`: Overrides relevance tuning configurations of
-  fields or attributes set at the index level. If you use this API to override the relevance
+  fields/attributes set at the index level. If you use this API to override the relevance
   tuning configured at the index level, but there is no relevance tuning configured at the
   index level, then Amazon Kendra does not apply any relevance tuning. If there is relevance
-  tuning configured at the index level, but you do not use this API to override any relevance
-  tuning in the index, then Amazon Kendra uses the relevance tuning that is configured at the
-  index level. If there is relevance tuning configured for fields at the index level, but you
-  use this API to override only some of these fields, then for the fields you did not
-  override, the importance is set to 1.
-- `"Facets"`: An array of documents attributes. Amazon Kendra returns a count for each
-  attribute key specified. This helps your users narrow their search.
+  tuning configured for fields at the index level, and you use this API to override only some
+  of these fields, then for the fields you did not override, the importance is set to 1.
+- `"Facets"`: An array of documents fields/attributes for faceted search. Amazon Kendra
+  returns a count for each field key specified. This helps your users narrow their search.
 - `"PageNumber"`: Query results are returned in pages the size of the PageSize parameter.
   By default, Amazon Kendra returns the first page of results. Use this parameter to get
   result pages after the first one.
 - `"PageSize"`: Sets the number of results that are returned in each page of results. The
   default page size is 10. The maximum number of results returned is 100. If you ask for more
   than 100 results, only 100 are returned.
-- `"QueryResultTypeFilter"`: Sets the type of query. Only results for the specified query
-  type are returned.
+- `"QueryResultTypeFilter"`: Sets the type of query result or response. Only results for
+  the specified type are returned.
 - `"QueryText"`: The input query text for the search. Amazon Kendra truncates queries at 30
   token words, which excludes punctuation and stop words. Truncation still applies if you use
   Boolean or more advanced, complex queries.
-- `"RequestedDocumentAttributes"`: An array of document attributes to include in the
-  response. You can limit the response to include certain document attributes. By default all
+- `"RequestedDocumentAttributes"`: An array of document fields/attributes to include in the
+  response. You can limit the response to include certain document fields. By default, all
   document attributes are included in the response.
 - `"SortingConfiguration"`: Provides information that determines how the results of the
   query are sorted. You can set the field that Amazon Kendra should sort the results on, and
@@ -2544,6 +2545,80 @@ function query(
     return kendra(
         "Query",
         Dict{String,Any}(mergewith(_merge, Dict{String,Any}("IndexId" => IndexId), params));
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
+    retrieve(index_id, query_text)
+    retrieve(index_id, query_text, params::Dict{String,<:Any})
+
+Retrieves relevant passages or text excerpts given an input query. This API is similar to
+the Query API. However, by default, the Query API only returns excerpt passages of up to
+100 token words. With the Retrieve API, you can retrieve longer passages of up to 200 token
+words and up to 100 semantically relevant passages. This doesn't include question-answer or
+FAQ type responses from your index. The passages are text excerpts that can be semantically
+extracted from multiple documents and multiple parts of the same document. If in extreme
+cases your documents produce no relevant passages using the Retrieve API, you can
+alternatively use the Query API. You can also do the following:   Override boosting at the
+index level   Filter based on document fields or attributes   Filter based on the user or
+their group access to documents   You can also include certain fields in the response that
+might provide useful additional information.
+
+# Arguments
+- `index_id`: The identifier of the index to retrieve relevant passages for the search.
+- `query_text`: The input query text to retrieve relevant passages for the search. Amazon
+  Kendra truncates queries at 30 token words, which excludes punctuation and stop words.
+  Truncation still applies if you use Boolean or more advanced, complex queries.
+
+# Optional Parameters
+Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"AttributeFilter"`: Filters search results by document fields/attributes. You can only
+  provide one attribute filter; however, the AndAllFilters, NotFilter, and OrAllFilters
+  parameters contain a list of other filters. The AttributeFilter parameter means you can
+  create a set of filtering rules that a document must satisfy to be included in the query
+  results.
+- `"DocumentRelevanceOverrideConfigurations"`: Overrides relevance tuning configurations of
+  fields/attributes set at the index level. If you use this API to override the relevance
+  tuning configured at the index level, but there is no relevance tuning configured at the
+  index level, then Amazon Kendra does not apply any relevance tuning. If there is relevance
+  tuning configured for fields at the index level, and you use this API to override only some
+  of these fields, then for the fields you did not override, the importance is set to 1.
+- `"PageNumber"`: Retrieved relevant passages are returned in pages the size of the
+  PageSize parameter. By default, Amazon Kendra returns the first page of results. Use this
+  parameter to get result pages after the first one.
+- `"PageSize"`: Sets the number of retrieved relevant passages that are returned in each
+  page of results. The default page size is 10. The maximum number of results returned is
+  100. If you ask for more than 100 results, only 100 are returned.
+- `"RequestedDocumentAttributes"`: A list of document fields/attributes to include in the
+  response. You can limit the response to include certain document fields. By default, all
+  document fields are included in the response.
+- `"UserContext"`: The user context token or user and group information.
+"""
+function retrieve(IndexId, QueryText; aws_config::AbstractAWSConfig=global_aws_config())
+    return kendra(
+        "Retrieve",
+        Dict{String,Any}("IndexId" => IndexId, "QueryText" => QueryText);
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function retrieve(
+    IndexId,
+    QueryText,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return kendra(
+        "Retrieve",
+        Dict{String,Any}(
+            mergewith(
+                _merge,
+                Dict{String,Any}("IndexId" => IndexId, "QueryText" => QueryText),
+                params,
+            ),
+        );
         aws_config=aws_config,
         feature_set=SERVICE_FEATURE_SET,
     )

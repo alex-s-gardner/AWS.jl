@@ -986,8 +986,8 @@ function get_table_objects(
 end
 
 """
-    get_temporary_glue_partition_credentials(partition, supported_permission_types, table_arn)
-    get_temporary_glue_partition_credentials(partition, supported_permission_types, table_arn, params::Dict{String,<:Any})
+    get_temporary_glue_partition_credentials(partition, table_arn)
+    get_temporary_glue_partition_credentials(partition, table_arn, params::Dict{String,<:Any})
 
 This API is identical to GetTemporaryTableCredentials except that this is used when the
 target Data Catalog resource is of type Partition. Lake Formation restricts the permission
@@ -996,8 +996,6 @@ single Amazon S3 prefix.
 
 # Arguments
 - `partition`: A list of partition values identifying a single partition.
-- `supported_permission_types`: A list of supported permission types for the partition.
-  Valid values are COLUMN_PERMISSION and CELL_FILTER_PERMISSION.
 - `table_arn`: The ARN of the partitions' table.
 
 # Optional Parameters
@@ -1008,28 +1006,22 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   the temporary credentials.
 - `"Permissions"`: Filters the request based on the user having been granted a list of
   specified permissions on the requested resource(s).
+- `"SupportedPermissionTypes"`: A list of supported permission types for the partition.
+  Valid values are COLUMN_PERMISSION and CELL_FILTER_PERMISSION.
 """
 function get_temporary_glue_partition_credentials(
-    Partition,
-    SupportedPermissionTypes,
-    TableArn;
-    aws_config::AbstractAWSConfig=global_aws_config(),
+    Partition, TableArn; aws_config::AbstractAWSConfig=global_aws_config()
 )
     return lakeformation(
         "POST",
         "/GetTemporaryGluePartitionCredentials",
-        Dict{String,Any}(
-            "Partition" => Partition,
-            "SupportedPermissionTypes" => SupportedPermissionTypes,
-            "TableArn" => TableArn,
-        );
+        Dict{String,Any}("Partition" => Partition, "TableArn" => TableArn);
         aws_config=aws_config,
         feature_set=SERVICE_FEATURE_SET,
     )
 end
 function get_temporary_glue_partition_credentials(
     Partition,
-    SupportedPermissionTypes,
     TableArn,
     params::AbstractDict{String};
     aws_config::AbstractAWSConfig=global_aws_config(),
@@ -1040,11 +1032,7 @@ function get_temporary_glue_partition_credentials(
         Dict{String,Any}(
             mergewith(
                 _merge,
-                Dict{String,Any}(
-                    "Partition" => Partition,
-                    "SupportedPermissionTypes" => SupportedPermissionTypes,
-                    "TableArn" => TableArn,
-                ),
+                Dict{String,Any}("Partition" => Partition, "TableArn" => TableArn),
                 params,
             ),
         );
@@ -1054,8 +1042,8 @@ function get_temporary_glue_partition_credentials(
 end
 
 """
-    get_temporary_glue_table_credentials(supported_permission_types, table_arn)
-    get_temporary_glue_table_credentials(supported_permission_types, table_arn, params::Dict{String,<:Any})
+    get_temporary_glue_table_credentials(table_arn)
+    get_temporary_glue_table_credentials(table_arn, params::Dict{String,<:Any})
 
 Allows a caller in a secure environment to assume a role with permission to access Amazon
 S3. In order to vend such credentials, Lake Formation assumes the role associated with a
@@ -1063,8 +1051,6 @@ registered location, for example an Amazon S3 bucket, with a scope down policy w
 restricts the access to a single prefix.
 
 # Arguments
-- `supported_permission_types`: A list of supported permission types for the table. Valid
-  values are COLUMN_PERMISSION and CELL_FILTER_PERMISSION.
 - `table_arn`: The ARN identifying a table in the Data Catalog for the temporary
   credentials request.
 
@@ -1076,22 +1062,21 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   the temporary credentials.
 - `"Permissions"`: Filters the request based on the user having been granted a list of
   specified permissions on the requested resource(s).
+- `"SupportedPermissionTypes"`: A list of supported permission types for the table. Valid
+  values are COLUMN_PERMISSION and CELL_FILTER_PERMISSION.
 """
 function get_temporary_glue_table_credentials(
-    SupportedPermissionTypes, TableArn; aws_config::AbstractAWSConfig=global_aws_config()
+    TableArn; aws_config::AbstractAWSConfig=global_aws_config()
 )
     return lakeformation(
         "POST",
         "/GetTemporaryGlueTableCredentials",
-        Dict{String,Any}(
-            "SupportedPermissionTypes" => SupportedPermissionTypes, "TableArn" => TableArn
-        );
+        Dict{String,Any}("TableArn" => TableArn);
         aws_config=aws_config,
         feature_set=SERVICE_FEATURE_SET,
     )
 end
 function get_temporary_glue_table_credentials(
-    SupportedPermissionTypes,
     TableArn,
     params::AbstractDict{String};
     aws_config::AbstractAWSConfig=global_aws_config(),
@@ -1100,14 +1085,7 @@ function get_temporary_glue_table_credentials(
         "POST",
         "/GetTemporaryGlueTableCredentials",
         Dict{String,Any}(
-            mergewith(
-                _merge,
-                Dict{String,Any}(
-                    "SupportedPermissionTypes" => SupportedPermissionTypes,
-                    "TableArn" => TableArn,
-                ),
-                params,
-            ),
+            mergewith(_merge, Dict{String,Any}("TableArn" => TableArn), params)
         );
         aws_config=aws_config,
         feature_set=SERVICE_FEATURE_SET,

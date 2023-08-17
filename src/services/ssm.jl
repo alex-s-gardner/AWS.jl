@@ -33,7 +33,8 @@ EC2) instances, see Tagging your Amazon EC2 resources in the Amazon EC2 User Gui
   OpsMetadata object with an ARN of
   arn:aws:ssm:us-east-2:1234567890:opsmetadata/aws/ssm/MyGroup/appmanager has a ResourceID of
   either aws/ssm/MyGroup/appmanager or /aws/ssm/MyGroup/appmanager. For the Document and
-  Parameter values, use the name of the resource.  ManagedInstance: mi-012345abcde   The
+  Parameter values, use the name of the resource. If you're tagging a shared document, you
+  must use the full ARN of the document.  ManagedInstance: mi-012345abcde   The
   ManagedInstance type for this API operation is only for on-premises managed nodes. You must
   specify the name of the managed node in the following format: mi-ID_number . For example,
   mi-1a2b3c4d5e6f.
@@ -651,12 +652,12 @@ end
     create_ops_item(description, source, title, params::Dict{String,<:Any})
 
 Creates a new OpsItem. You must have permission in Identity and Access Management (IAM) to
-create a new OpsItem. For more information, see Getting started with OpsCenter in the
-Amazon Web Services Systems Manager User Guide. Operations engineers and IT professionals
-use Amazon Web Services Systems Manager OpsCenter to view, investigate, and remediate
-operational issues impacting the performance and health of their Amazon Web Services
-resources. For more information, see Amazon Web Services Systems Manager OpsCenter in the
-Amazon Web Services Systems Manager User Guide.
+create a new OpsItem. For more information, see Set up OpsCenter in the Amazon Web Services
+Systems Manager User Guide. Operations engineers and IT professionals use Amazon Web
+Services Systems Manager OpsCenter to view, investigate, and remediate operational issues
+impacting the performance and health of their Amazon Web Services resources. For more
+information, see Amazon Web Services Systems Manager OpsCenter in the Amazon Web Services
+Systems Manager User Guide.
 
 # Arguments
 - `description`: Information about the OpsItem.
@@ -669,8 +670,8 @@ Amazon Web Services Systems Manager User Guide.
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
 - `"AccountId"`: The target Amazon Web Services account where you want to create an
   OpsItem. To make this call, your account must be configured to work with OpsItems across
-  accounts. For more information, see Setting up OpsCenter to work with OpsItems across
-  accounts in the Amazon Web Services Systems Manager User Guide.
+  accounts. For more information, see Set up OpsCenter in the Amazon Web Services Systems
+  Manager User Guide.
 - `"ActualEndTime"`: The time a runbook workflow ended. Currently reported only for the
   OpsItem type /aws/changerequest.
 - `"ActualStartTime"`: The time a runbook workflow started. Currently reported only for the
@@ -706,13 +707,10 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   OpsItems. For example, related OpsItems can include OpsItems with similar error messages,
   impacted resources, or statuses for the impacted resource.
 - `"Severity"`: Specify a severity to assign to an OpsItem.
-- `"Tags"`: Optional metadata that you assign to a resource. You can restrict access to
-  OpsItems by using an inline IAM policy that specifies tags. For more information, see
-  Getting started with OpsCenter in the Amazon Web Services Systems Manager User Guide. Tags
-  use a key-value pair. For example:  Key=Department,Value=Finance   To add tags to a new
-  OpsItem, a user must have IAM permissions for both the ssm:CreateOpsItems operation and the
-  ssm:AddTagsToResource operation. To add tags to an existing OpsItem, use the
-  AddTagsToResource operation.
+- `"Tags"`: Optional metadata that you assign to a resource. Tags use a key-value pair. For
+  example:  Key=Department,Value=Finance   To add tags to a new OpsItem, a user must have IAM
+  permissions for both the ssm:CreateOpsItems operation and the ssm:AddTagsToResource
+  operation. To add tags to an existing OpsItem, use the AddTagsToResource operation.
 """
 function create_ops_item(
     Description, Source, Title; aws_config::AbstractAWSConfig=global_aws_config()
@@ -2028,26 +2026,29 @@ end
     describe_instance_information()
     describe_instance_information(params::Dict{String,<:Any})
 
-Describes one or more of your managed nodes, including information about the operating
-system platform, the version of SSM Agent installed on the managed node, node status, and
-so on. If you specify one or more managed node IDs, it returns information for those
-managed nodes. If you don't specify node IDs, it returns information for all your managed
-nodes. If you specify a node ID that isn't valid or a node that you don't own, you receive
-an error.  The IamRole field for this API operation is the Identity and Access Management
-(IAM) role assigned to on-premises managed nodes. This call doesn't return the IAM role for
-EC2 instances.
+Provides information about one or more of your managed nodes, including the operating
+system platform, SSM Agent version, association status, and IP address. This operation does
+not return information for nodes that are either Stopped or Terminated. If you specify one
+or more node IDs, the operation returns information for those managed nodes. If you don't
+specify node IDs, it returns information for all your managed nodes. If you specify a node
+ID that isn't valid or a node that you don't own, you receive an error.  The IamRole field
+returned for this API operation is the Identity and Access Management (IAM) role assigned
+to on-premises managed nodes. This operation does not return the IAM role for EC2
+instances.
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
 - `"Filters"`: One or more filters. Use a filter to return a more specific list of managed
-  nodes. You can filter based on tags applied to your managed nodes. Use this Filters data
-  type instead of InstanceInformationFilterList, which is deprecated.
+  nodes. You can filter based on tags applied to your managed nodes. Tag filters can't be
+  combined with other filter types. Use this Filters data type instead of
+  InstanceInformationFilterList, which is deprecated.
 - `"InstanceInformationFilterList"`: This is a legacy method. We recommend that you don't
   use this method. Instead, use the Filters data type. Filters enables you to return node
   information by filtering based on tags applied to managed nodes.  Attempting to use
   InstanceInformationFilterList and Filters leads to an exception error.
 - `"MaxResults"`: The maximum number of items to return for this call. The call also
   returns a token that you can specify in a subsequent call to get the next set of results.
+  The default value is 10 items.
 - `"NextToken"`: The token for the next set of items to return. (You received this token
   from a previous call.)
 """
@@ -2594,12 +2595,11 @@ end
     describe_ops_items(params::Dict{String,<:Any})
 
 Query a set of OpsItems. You must have permission in Identity and Access Management (IAM)
-to query a list of OpsItems. For more information, see Getting started with OpsCenter in
-the Amazon Web Services Systems Manager User Guide. Operations engineers and IT
-professionals use Amazon Web Services Systems Manager OpsCenter to view, investigate, and
-remediate operational issues impacting the performance and health of their Amazon Web
-Services resources. For more information, see OpsCenter in the Amazon Web Services Systems
-Manager User Guide.
+to query a list of OpsItems. For more information, see Set up OpsCenter in the Amazon Web
+Services Systems Manager User Guide. Operations engineers and IT professionals use Amazon
+Web Services Systems Manager OpsCenter to view, investigate, and remediate operational
+issues impacting the performance and health of their Amazon Web Services resources. For
+more information, see OpsCenter in the Amazon Web Services Systems Manager User Guide.
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
@@ -2613,11 +2613,11 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   Operations: Equals,Contains   Key: OperationalData** Operations: Equals   Key:
   OperationalDataKey Operations: Equals   Key: OperationalDataValue Operations: Equals,
   Contains   Key: OpsItemId Operations: Equals   Key: ResourceId Operations: Contains   Key:
-  AutomationId Operations: Equals   *The Equals operator for Title matches the first 100
-  characters. If you specify more than 100 characters, they system returns an error that the
-  filter value exceeds the length limit. **If you filter the response by using the
-  OperationalData operator, specify a key-value pair by using the following JSON format:
-  {\"key\":\"key_name\",\"value\":\"a_value\"}
+  AutomationId Operations: Equals   Key: AccountId Operations: Equals   *The Equals operator
+  for Title matches the first 100 characters. If you specify more than 100 characters, they
+  system returns an error that the filter value exceeds the length limit. **If you filter the
+  response by using the OperationalData operator, specify a key-value pair by using the
+  following JSON format: {\"key\":\"key_name\",\"value\":\"a_value\"}
 """
 function describe_ops_items(; aws_config::AbstractAWSConfig=global_aws_config())
     return ssm("DescribeOpsItems"; aws_config=aws_config, feature_set=SERVICE_FEATURE_SET)
@@ -3491,12 +3491,12 @@ end
     get_ops_item(ops_item_id, params::Dict{String,<:Any})
 
 Get information about an OpsItem by using the ID. You must have permission in Identity and
-Access Management (IAM) to view information about an OpsItem. For more information, see
-Getting started with OpsCenter in the Amazon Web Services Systems Manager User Guide.
-Operations engineers and IT professionals use Amazon Web Services Systems Manager OpsCenter
-to view, investigate, and remediate operational issues impacting the performance and health
-of their Amazon Web Services resources. For more information, see OpsCenter in the Amazon
-Web Services Systems Manager User Guide.
+Access Management (IAM) to view information about an OpsItem. For more information, see Set
+up OpsCenter in the Amazon Web Services Systems Manager User Guide. Operations engineers
+and IT professionals use Amazon Web Services Systems Manager OpsCenter to view,
+investigate, and remediate operational issues impacting the performance and health of their
+Amazon Web Services resources. For more information, see OpsCenter in the Amazon Web
+Services Systems Manager User Guide.
 
 # Arguments
 - `ops_item_id`: The ID of the OpsItem that you want to get.
@@ -6550,12 +6550,11 @@ end
     update_ops_item(ops_item_id, params::Dict{String,<:Any})
 
 Edit or change an OpsItem. You must have permission in Identity and Access Management (IAM)
-to update an OpsItem. For more information, see Getting started with OpsCenter in the
-Amazon Web Services Systems Manager User Guide. Operations engineers and IT professionals
-use Amazon Web Services Systems Manager OpsCenter to view, investigate, and remediate
-operational issues impacting the performance and health of their Amazon Web Services
-resources. For more information, see OpsCenter in the Amazon Web Services Systems Manager
-User Guide.
+to update an OpsItem. For more information, see Set up OpsCenter in the Amazon Web Services
+Systems Manager User Guide. Operations engineers and IT professionals use Amazon Web
+Services Systems Manager OpsCenter to view, investigate, and remediate operational issues
+impacting the performance and health of their Amazon Web Services resources. For more
+information, see OpsCenter in the Amazon Web Services Systems Manager User Guide.
 
 # Arguments
 - `ops_item_id`: The ID of the OpsItem.

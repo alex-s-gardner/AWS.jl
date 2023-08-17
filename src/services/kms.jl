@@ -426,6 +426,9 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   constraint cannot exceed 384 characters. For information about grant constraints, see Using
   grant constraints in the Key Management Service Developer Guide. For more information about
   encryption context, see Encryption context in the  Key Management Service Developer Guide .
+- `"DryRun"`: Checks if your request will succeed. DryRun is an optional parameter.  To
+  learn more about how to use this parameter, see Testing your KMS API calls in the Key
+  Management Service Developer Guide.
 - `"GrantTokens"`: A list of grant tokens.  Use a grant token when your permission to call
   this operation comes from a new grant that has not yet achieved eventual consistency. For
   more information, see Grant token and Using a grant token in the Key Management Service
@@ -774,6 +777,9 @@ operations:     Encrypt     GenerateDataKey     GenerateDataKeyPair     ReEncryp
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"DryRun"`: Checks if your request will succeed. DryRun is an optional parameter.  To
+  learn more about how to use this parameter, see Testing your KMS API calls in the Key
+  Management Service Developer Guide.
 - `"EncryptionAlgorithm"`: Specifies the encryption algorithm that will be used to decrypt
   the ciphertext. Specify the same algorithm that was used to encrypt the data. If you
   specify a different algorithm, the Decrypt operation fails. This parameter is required only
@@ -1417,6 +1423,9 @@ permissions: kms:Encrypt (key policy)  Related operations:     Decrypt     Gener
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"DryRun"`: Checks if your request will succeed. DryRun is an optional parameter.  To
+  learn more about how to use this parameter, see Testing your KMS API calls in the Key
+  Management Service Developer Guide.
 - `"EncryptionAlgorithm"`: Specifies the encryption algorithm that KMS will use to encrypt
   the plaintext message. The algorithm must be compatible with the KMS key that you specify.
   This parameter is required only for asymmetric KMS keys. The default value,
@@ -1533,6 +1542,9 @@ GenerateDataKeyPairWithoutPlaintext     GenerateDataKeyWithoutPlaintext
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"DryRun"`: Checks if your request will succeed. DryRun is an optional parameter.  To
+  learn more about how to use this parameter, see Testing your KMS API calls in the Key
+  Management Service Developer Guide.
 - `"EncryptionContext"`: Specifies the encryption context that will be used when encrypting
   the data key.  Do not include confidential or sensitive information in this field. This
   field may be displayed in plaintext in CloudTrail logs and other output.  An encryption
@@ -1660,6 +1672,9 @@ GenerateDataKeyWithoutPlaintext
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"DryRun"`: Checks if your request will succeed. DryRun is an optional parameter.  To
+  learn more about how to use this parameter, see Testing your KMS API calls in the Key
+  Management Service Developer Guide.
 - `"EncryptionContext"`: Specifies the encryption context that will be used when encrypting
   the private key in the data key pair.  Do not include confidential or sensitive information
   in this field. This field may be displayed in plaintext in CloudTrail logs and other
@@ -1774,6 +1789,9 @@ GenerateDataKeyPair     GenerateDataKeyWithoutPlaintext
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"DryRun"`: Checks if your request will succeed. DryRun is an optional parameter.  To
+  learn more about how to use this parameter, see Testing your KMS API calls in the Key
+  Management Service Developer Guide.
 - `"EncryptionContext"`: Specifies the encryption context that will be used when encrypting
   the private key in the data key pair.  Do not include confidential or sensitive information
   in this field. This field may be displayed in plaintext in CloudTrail logs and other
@@ -1874,6 +1892,9 @@ GenerateDataKeyPairWithoutPlaintext
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"DryRun"`: Checks if your request will succeed. DryRun is an optional parameter.  To
+  learn more about how to use this parameter, see Testing your KMS API calls in the Key
+  Management Service Developer Guide.
 - `"EncryptionContext"`: Specifies the encryption context that will be used when encrypting
   the data key.  Do not include confidential or sensitive information in this field. This
   field may be displayed in plaintext in CloudTrail logs and other output.  An encryption
@@ -1953,6 +1974,9 @@ kms:GenerateMac (key policy)  Related operations: VerifyMac
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"DryRun"`: Checks if your request will succeed. DryRun is an optional parameter.  To
+  learn more about how to use this parameter, see Testing your KMS API calls in the Key
+  Management Service Developer Guide.
 - `"GrantTokens"`: A list of grant tokens. Use a grant token when your permission to call
   this operation comes from a new grant that has not yet achieved eventual consistency. For
   more information, see Grant token and Using a grant token in the Key Management Service
@@ -2923,6 +2947,9 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   encryption KMS keys. On operations with symmetric encryption KMS keys, an encryption
   context is optional, but it is strongly recommended. For more information, see Encryption
   context in the Key Management Service Developer Guide.
+- `"DryRun"`: Checks if your request will succeed. DryRun is an optional parameter.  To
+  learn more about how to use this parameter, see Testing your KMS API calls in the Key
+  Management Service Developer Guide.
 - `"GrantTokens"`: A list of grant tokens. Use a grant token when your permission to call
   this operation comes from a new grant that has not yet achieved eventual consistency. For
   more information, see Grant token and Using a grant token in the Key Management Service
@@ -3169,6 +3196,9 @@ ListRetirableGrants     RevokeGrant
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"DryRun"`: Checks if your request will succeed. DryRun is an optional parameter.  To
+  learn more about how to use this parameter, see Testing your KMS API calls in the Key
+  Management Service Developer Guide.
 - `"GrantId"`: Identifies the grant to retire. To get the grant ID, use CreateGrant,
   ListGrants, or ListRetirableGrants.   Grant ID Example -
   0123456789012345678901234567890123456789012345678901234567890123
@@ -3218,6 +3248,11 @@ ListGrants     ListRetirableGrants     RetireGrant
   arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab    To get the
   key ID and key ARN for a KMS key, use ListKeys or DescribeKey.
 
+# Optional Parameters
+Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"DryRun"`: Checks if your request will succeed. DryRun is an optional parameter.  To
+  learn more about how to use this parameter, see Testing your KMS API calls in the Key
+  Management Service Developer Guide.
 """
 function revoke_grant(GrantId, KeyId; aws_config::AbstractAWSConfig=global_aws_config())
     return kms(
@@ -3258,30 +3293,29 @@ KMS key. After the waiting period ends, KMS deletes the KMS key, its key materia
 KMS data associated with it, including all aliases that refer to it.  Deleting a KMS key is
 a destructive and potentially dangerous operation. When a KMS key is deleted, all data that
 was encrypted under the KMS key is unrecoverable. (The only exception is a multi-Region
-replica key, or an asymmetric or HMAC KMS key with imported key material[BUGBUG-link to
-importing-keys-managing.html#import-delete-key.) To prevent the use of a KMS key without
-deleting it, use DisableKey.   You can schedule the deletion of a multi-Region primary key
-and its replica keys at any time. However, KMS will not delete a multi-Region primary key
-with existing replica keys. If you schedule the deletion of a primary key with replicas,
-its key state changes to PendingReplicaDeletion and it cannot be replicated or used in
-cryptographic operations. This status can continue indefinitely. When the last of its
-replicas keys is deleted (not just scheduled), the key state of the primary key changes to
-PendingDeletion and its waiting period (PendingWindowInDays) begins. For details, see
-Deleting multi-Region keys in the Key Management Service Developer Guide. When KMS deletes
-a KMS key from an CloudHSM key store, it makes a best effort to delete the associated key
-material from the associated CloudHSM cluster. However, you might need to manually delete
-the orphaned key material from the cluster and its backups. Deleting a KMS key from an
-external key store has no effect on the associated external key. However, for both types of
-custom key stores, deleting a KMS key is destructive and irreversible. You cannot decrypt
-ciphertext encrypted under the KMS key by using only its associated external key or
-CloudHSM key. Also, you cannot recreate a KMS key in an external key store by creating a
-new KMS key with the same key material. For more information about scheduling a KMS key for
-deletion, see Deleting KMS keys in the Key Management Service Developer Guide. The KMS key
-that you use for this operation must be in a compatible key state. For details, see Key
-states of KMS keys in the Key Management Service Developer Guide.  Cross-account use: No.
-You cannot perform this operation on a KMS key in a different Amazon Web Services account.
-Required permissions: kms:ScheduleKeyDeletion (key policy)  Related operations
-CancelKeyDeletion     DisableKey
+replica key, or an asymmetric or HMAC KMS key with imported key material.) To prevent the
+use of a KMS key without deleting it, use DisableKey.   You can schedule the deletion of a
+multi-Region primary key and its replica keys at any time. However, KMS will not delete a
+multi-Region primary key with existing replica keys. If you schedule the deletion of a
+primary key with replicas, its key state changes to PendingReplicaDeletion and it cannot be
+replicated or used in cryptographic operations. This status can continue indefinitely. When
+the last of its replicas keys is deleted (not just scheduled), the key state of the primary
+key changes to PendingDeletion and its waiting period (PendingWindowInDays) begins. For
+details, see Deleting multi-Region keys in the Key Management Service Developer Guide. When
+KMS deletes a KMS key from an CloudHSM key store, it makes a best effort to delete the
+associated key material from the associated CloudHSM cluster. However, you might need to
+manually delete the orphaned key material from the cluster and its backups. Deleting a KMS
+key from an external key store has no effect on the associated external key. However, for
+both types of custom key stores, deleting a KMS key is destructive and irreversible. You
+cannot decrypt ciphertext encrypted under the KMS key by using only its associated external
+key or CloudHSM key. Also, you cannot recreate a KMS key in an external key store by
+creating a new KMS key with the same key material. For more information about scheduling a
+KMS key for deletion, see Deleting KMS keys in the Key Management Service Developer Guide.
+The KMS key that you use for this operation must be in a compatible key state. For details,
+see Key states of KMS keys in the Key Management Service Developer Guide.  Cross-account
+use: No. You cannot perform this operation on a KMS key in a different Amazon Web Services
+account.  Required permissions: kms:ScheduleKeyDeletion (key policy)  Related operations
+ CancelKeyDeletion     DisableKey
 
 # Arguments
 - `key_id`: The unique identifier of the KMS key to delete. Specify the key ID or key ARN
@@ -3374,6 +3408,9 @@ parameter.  Required permissions: kms:Sign (key policy)  Related operations: Ver
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"DryRun"`: Checks if your request will succeed. DryRun is an optional parameter.  To
+  learn more about how to use this parameter, see Testing your KMS API calls in the Key
+  Management Service Developer Guide.
 - `"GrantTokens"`: A list of grant tokens. Use a grant token when your permission to call
   this operation comes from a new grant that has not yet achieved eventual consistency. For
   more information, see Grant token and Using a grant token in the Key Management Service
@@ -3949,6 +3986,9 @@ parameter.   Required permissions: kms:Verify (key policy)  Related operations: 
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"DryRun"`: Checks if your request will succeed. DryRun is an optional parameter.  To
+  learn more about how to use this parameter, see Testing your KMS API calls in the Key
+  Management Service Developer Guide.
 - `"GrantTokens"`: A list of grant tokens. Use a grant token when your permission to call
   this operation comes from a new grant that has not yet achieved eventual consistency. For
   more information, see Grant token and Using a grant token in the Key Management Service
@@ -4053,6 +4093,9 @@ Related operations: GenerateMac
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"DryRun"`: Checks if your request will succeed. DryRun is an optional parameter.  To
+  learn more about how to use this parameter, see Testing your KMS API calls in the Key
+  Management Service Developer Guide.
 - `"GrantTokens"`: A list of grant tokens. Use a grant token when your permission to call
   this operation comes from a new grant that has not yet achieved eventual consistency. For
   more information, see Grant token and Using a grant token in the Key Management Service

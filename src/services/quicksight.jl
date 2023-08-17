@@ -2775,6 +2775,97 @@ function describe_dashboard_permissions(
 end
 
 """
+    describe_dashboard_snapshot_job(aws_account_id, dashboard_id, snapshot_job_id)
+    describe_dashboard_snapshot_job(aws_account_id, dashboard_id, snapshot_job_id, params::Dict{String,<:Any})
+
+Describes an existing snapshot job. Poll job descriptions after a job starts to know the
+status of the job. For information on available status codes, see JobStatus.
+
+# Arguments
+- `aws_account_id`: The ID of the Amazon Web Services account that the dashboard snapshot
+  job is executed in.
+- `dashboard_id`: The ID of the dashboard that you have started a snapshot job for.
+- `snapshot_job_id`: The ID of the job to be described. The job ID is set when you start a
+  new job with a StartDashboardSnapshotJob API call.
+
+"""
+function describe_dashboard_snapshot_job(
+    AwsAccountId,
+    DashboardId,
+    SnapshotJobId;
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return quicksight(
+        "GET",
+        "/accounts/$(AwsAccountId)/dashboards/$(DashboardId)/snapshot-jobs/$(SnapshotJobId)";
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function describe_dashboard_snapshot_job(
+    AwsAccountId,
+    DashboardId,
+    SnapshotJobId,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return quicksight(
+        "GET",
+        "/accounts/$(AwsAccountId)/dashboards/$(DashboardId)/snapshot-jobs/$(SnapshotJobId)",
+        params;
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
+    describe_dashboard_snapshot_job_result(aws_account_id, dashboard_id, snapshot_job_id)
+    describe_dashboard_snapshot_job_result(aws_account_id, dashboard_id, snapshot_job_id, params::Dict{String,<:Any})
+
+Describes the result of an existing snapshot job that has finished running. A finished
+snapshot job will return a COMPLETED or FAILED status when you poll the job with a
+DescribeDashboardSnapshotJob API call. If the job has not finished running, this operation
+returns a message that says Dashboard Snapshot Job with id &lt;SnapshotjobId&gt; has not
+reached a terminal state..
+
+# Arguments
+- `aws_account_id`: The ID of the Amazon Web Services account that the dashboard snapshot
+  job is executed in.
+- `dashboard_id`: The ID of the dashboard that you have started a snapshot job for.
+- `snapshot_job_id`: The ID of the job to be described. The job ID is set when you start a
+  new job with a StartDashboardSnapshotJob API call.
+
+"""
+function describe_dashboard_snapshot_job_result(
+    AwsAccountId,
+    DashboardId,
+    SnapshotJobId;
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return quicksight(
+        "GET",
+        "/accounts/$(AwsAccountId)/dashboards/$(DashboardId)/snapshot-jobs/$(SnapshotJobId)/result";
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function describe_dashboard_snapshot_job_result(
+    AwsAccountId,
+    DashboardId,
+    SnapshotJobId,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return quicksight(
+        "GET",
+        "/accounts/$(AwsAccountId)/dashboards/$(DashboardId)/snapshot-jobs/$(SnapshotJobId)/result",
+        params;
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
     describe_data_set(aws_account_id, data_set_id)
     describe_data_set(aws_account_id, data_set_id, params::Dict{String,<:Any})
 
@@ -5792,7 +5883,7 @@ QuickSight assets. You can also choose to export any asset dependencies in the s
 Export jobs run asynchronously and can be polled with a DescribeAssetBundleExportJob API
 call. When a job is successfully completed, a download URL that contains the exported
 assets is returned. The URL is valid for 5 minutes and can be refreshed with a
-DescribeAssetBundleExportJob API call. Each Amazon QuickSight account can run up to 10
+DescribeAssetBundleExportJob API call. Each Amazon QuickSight account can run up to 5
 export jobs concurrently. The API caller must have the necessary permissions in their IAM
 role to access each resource before the resources can be exported.
 
@@ -5873,7 +5964,7 @@ Starts an Asset Bundle import job. An Asset Bundle import job imports specified 
 QuickSight assets into an Amazon QuickSight account. You can also choose to import a naming
 prefix and specified configuration overrides. The assets that are contained in the bundle
 file that you provide are used to create or update a new or existing asset in your Amazon
-QuickSight account. Each Amazon QuickSight account can run up to 10 import jobs
+QuickSight account. Each Amazon QuickSight account can run up to 5 import jobs
 concurrently. The API caller must have the necessary \"create\", \"describe\", and
 \"update\" permissions in their IAM role to access each resource type that is contained in
 the bundle file before the resources can be imported.
@@ -5882,7 +5973,7 @@ the bundle file before the resources can be imported.
 - `asset_bundle_import_job_id`: The ID of the job. This ID is unique while the job is
   running. After the job is completed, you can reuse this ID for another job.
 - `asset_bundle_import_source`: The source of the asset bundle zip file that contains the
-  data that you want to import.
+  data that you want to import. The file must be in QUICKSIGHT_JSON format.
 - `aws_account_id`: The ID of the Amazon Web Services account to import assets into.
 
 # Optional Parameters
@@ -5927,6 +6018,78 @@ function start_asset_bundle_import_job(
                 Dict{String,Any}(
                     "AssetBundleImportJobId" => AssetBundleImportJobId,
                     "AssetBundleImportSource" => AssetBundleImportSource,
+                ),
+                params,
+            ),
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
+    start_dashboard_snapshot_job(aws_account_id, dashboard_id, snapshot_configuration, snapshot_job_id, user_configuration)
+    start_dashboard_snapshot_job(aws_account_id, dashboard_id, snapshot_configuration, snapshot_job_id, user_configuration, params::Dict{String,<:Any})
+
+Starts an asynchronous job that generates a dashboard snapshot. You can request one of the
+following format configurations per API call.   1 paginated PDF   5 CSVs   Poll job
+descriptions with a DescribeDashboardSnapshotJob API call. Once the job succeeds, use the
+DescribeDashboardSnapshotJobResult API to obtain the download URIs that the job generates.
+
+# Arguments
+- `aws_account_id`: The ID of the Amazon Web Services account that the dashboard snapshot
+  job is executed in.
+- `dashboard_id`: The ID of the dashboard that you want to start a snapshot job for.
+- `snapshot_configuration`: A structure that describes the configuration of the dashboard
+  snapshot.
+- `snapshot_job_id`: An ID for the dashboard snapshot job. This ID is unique to the
+  dashboard while the job is running. This ID can be used to poll the status of a job with a
+  DescribeDashboardSnapshotJob while the job runs. You can reuse this ID for another job 24
+  hours after the current job is completed.
+- `user_configuration`:  A structure that contains information about the anonymous users
+  that the generated snapshot is for. This API will not return information about registered
+  Amazon QuickSight.
+
+"""
+function start_dashboard_snapshot_job(
+    AwsAccountId,
+    DashboardId,
+    SnapshotConfiguration,
+    SnapshotJobId,
+    UserConfiguration;
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return quicksight(
+        "POST",
+        "/accounts/$(AwsAccountId)/dashboards/$(DashboardId)/snapshot-jobs",
+        Dict{String,Any}(
+            "SnapshotConfiguration" => SnapshotConfiguration,
+            "SnapshotJobId" => SnapshotJobId,
+            "UserConfiguration" => UserConfiguration,
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function start_dashboard_snapshot_job(
+    AwsAccountId,
+    DashboardId,
+    SnapshotConfiguration,
+    SnapshotJobId,
+    UserConfiguration,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return quicksight(
+        "POST",
+        "/accounts/$(AwsAccountId)/dashboards/$(DashboardId)/snapshot-jobs",
+        Dict{String,Any}(
+            mergewith(
+                _merge,
+                Dict{String,Any}(
+                    "SnapshotConfiguration" => SnapshotConfiguration,
+                    "SnapshotJobId" => SnapshotJobId,
+                    "UserConfiguration" => UserConfiguration,
                 ),
                 params,
             ),

@@ -560,6 +560,43 @@ function register_application(
 end
 
 """
+    start_application_refresh(application_id)
+    start_application_refresh(application_id, params::Dict{String,<:Any})
+
+Refreshes a registered application.
+
+# Arguments
+- `application_id`: The ID of the application.
+
+"""
+function start_application_refresh(
+    ApplicationId; aws_config::AbstractAWSConfig=global_aws_config()
+)
+    return ssm_sap(
+        "POST",
+        "/start-application-refresh",
+        Dict{String,Any}("ApplicationId" => ApplicationId);
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function start_application_refresh(
+    ApplicationId,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return ssm_sap(
+        "POST",
+        "/start-application-refresh",
+        Dict{String,Any}(
+            mergewith(_merge, Dict{String,Any}("ApplicationId" => ApplicationId), params)
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
     tag_resource(resource_arn, tags)
     tag_resource(resource_arn, tags, params::Dict{String,<:Any})
 
@@ -643,6 +680,7 @@ Updates the settings of an application registered with AWS Systems Manager for S
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"Backint"`: Installation of AWS Backint Agent for SAP HANA.
 - `"CredentialsToAddOrUpdate"`: The credentials to be added or updated.
 - `"CredentialsToRemove"`: The credentials to be removed.
 """

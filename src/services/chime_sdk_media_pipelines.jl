@@ -149,7 +149,8 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
 - `"MediaInsightsRuntimeMetadata"`: The runtime metadata for the media insights pipeline.
   Consists of a key-value map of strings.
 - `"S3RecordingSinkRuntimeConfiguration"`: The runtime configuration for the S3 recording
-  sink.
+  sink. If specified, the settings in this structure override any settings in
+  S3RecordingSinkConfiguration.
 - `"Tags"`: The tags assigned to the media insights pipeline.
 """
 function create_media_insights_pipeline(

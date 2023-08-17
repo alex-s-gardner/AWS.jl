@@ -502,6 +502,58 @@ function associate_security_key(
 end
 
 """
+    associate_traffic_distribution_group_user(instance_id, traffic_distribution_group_id, user_id)
+    associate_traffic_distribution_group_user(instance_id, traffic_distribution_group_id, user_id, params::Dict{String,<:Any})
+
+Associates an agent with a traffic distribution group.
+
+# Arguments
+- `instance_id`: The identifier of the Amazon Connect instance. You can find the instance
+  ID in the Amazon Resource Name (ARN) of the instance.
+- `traffic_distribution_group_id`: The identifier of the traffic distribution group. This
+  can be the ID or the ARN if the API is being called in the Region where the traffic
+  distribution group was created. The ARN must be provided if the call is from the replicated
+  Region.
+- `user_id`: The identifier of the user account. This can be the ID or the ARN of the user.
+
+"""
+function associate_traffic_distribution_group_user(
+    InstanceId,
+    TrafficDistributionGroupId,
+    UserId;
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return connect(
+        "PUT",
+        "/traffic-distribution-group/$(TrafficDistributionGroupId)/user",
+        Dict{String,Any}("InstanceId" => InstanceId, "UserId" => UserId);
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function associate_traffic_distribution_group_user(
+    InstanceId,
+    TrafficDistributionGroupId,
+    UserId,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return connect(
+        "PUT",
+        "/traffic-distribution-group/$(TrafficDistributionGroupId)/user",
+        Dict{String,Any}(
+            mergewith(
+                _merge,
+                Dict{String,Any}("InstanceId" => InstanceId, "UserId" => UserId),
+                params,
+            ),
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
     claim_phone_number(phone_number, target_arn)
     claim_phone_number(phone_number, target_arn, params::Dict{String,<:Any})
 
@@ -511,7 +563,18 @@ Connect instance or traffic distribution group was created. For more information
 to use this operation, see Claim a phone number in your country and Claim phone numbers to
 traffic distribution groups in the Amazon Connect Administrator Guide.   You can call the
 SearchAvailablePhoneNumbers API for available phone numbers that you can claim. Call the
-DescribePhoneNumber API to verify the status of a previous ClaimPhoneNumber operation.
+DescribePhoneNumber API to verify the status of a previous ClaimPhoneNumber operation.  If
+you plan to claim and release numbers frequently during a 30 day period, contact us for a
+service quota exception. Otherwise, it is possible you will be blocked from claiming and
+releasing any more numbers until 30 days past the oldest number released has expired. By
+default you can claim and release up to 200% of your maximum number of active phone numbers
+during any 30 day period. If you claim and release phone numbers using the UI or API during
+a rolling 30 day cycle that exceeds 200% of your phone number service level quota, you will
+be blocked from claiming any more numbers until 30 days past the oldest number released has
+expired.  For example, if you already have 99 claimed numbers and a service level quota of
+99 phone numbers, and in any 30 day period you release 99, claim 99, and then release 99,
+you will have exceeded the 200% limit. At that point you are blocked from claiming any more
+numbers until you open an Amazon Web Services support ticket.
 
 # Arguments
 - `phone_number`: The phone number you want to claim. Phone numbers are formatted [+]
@@ -1109,7 +1172,9 @@ the OutboundCallerConfig request body parameter. However, if the number is claim
 traffic distribution group and you are calling this API using an instance in the alternate
 Amazon Web Services Region associated with the traffic distribution group, you must provide
 a full phone number ARN. If a UUID is provided in this scenario, you will receive a
-ResourceNotFoundException.
+ResourceNotFoundException. Only use the phone number ARN format that doesn't contain
+instance in the path, for example, arn:aws:connect:us-east-1:1234567890:phone-number/uuid.
+This is the same ARN format that is returned when you call the ListPhoneNumbersV2 API.
 
 # Arguments
 - `hours_of_operation_id`: The identifier for the hours of operation.
@@ -1232,6 +1297,9 @@ Creates a new routing profile.
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"AgentAvailabilityTimer"`: Whether agents with this routing profile will have their
+  routing order calculated based on longest idle time or time since their last inbound
+  contact.
 - `"QueueConfigs"`: The inbound queues associated with the routing profile. If no queue is
   added, the agent can make only outbound calls. The limit of 10 array members applies to the
   maximum number of RoutingProfileQueueConfig objects that can be passed during a
@@ -2163,6 +2231,43 @@ function delete_prompt(
 end
 
 """
+    delete_queue(instance_id, queue_id)
+    delete_queue(instance_id, queue_id, params::Dict{String,<:Any})
+
+Deletes a queue.
+
+# Arguments
+- `instance_id`: The identifier of the Amazon Connect instance. You can find the instance
+  ID in the Amazon Resource Name (ARN) of the instance.
+- `queue_id`: The identifier for the queue.
+
+"""
+function delete_queue(
+    InstanceId, QueueId; aws_config::AbstractAWSConfig=global_aws_config()
+)
+    return connect(
+        "DELETE",
+        "/queues/$(InstanceId)/$(QueueId)";
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function delete_queue(
+    InstanceId,
+    QueueId,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return connect(
+        "DELETE",
+        "/queues/$(InstanceId)/$(QueueId)",
+        params;
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
     delete_quick_connect(instance_id, quick_connect_id)
     delete_quick_connect(instance_id, quick_connect_id, params::Dict{String,<:Any})
 
@@ -2193,6 +2298,43 @@ function delete_quick_connect(
     return connect(
         "DELETE",
         "/quick-connects/$(InstanceId)/$(QuickConnectId)",
+        params;
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
+    delete_routing_profile(instance_id, routing_profile_id)
+    delete_routing_profile(instance_id, routing_profile_id, params::Dict{String,<:Any})
+
+Deletes a routing profile.
+
+# Arguments
+- `instance_id`: The identifier of the Amazon Connect instance. You can find the instance
+  ID in the Amazon Resource Name (ARN) of the instance.
+- `routing_profile_id`: The identifier of the routing profile.
+
+"""
+function delete_routing_profile(
+    InstanceId, RoutingProfileId; aws_config::AbstractAWSConfig=global_aws_config()
+)
+    return connect(
+        "DELETE",
+        "/routing-profiles/$(InstanceId)/$(RoutingProfileId)";
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function delete_routing_profile(
+    InstanceId,
+    RoutingProfileId,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return connect(
+        "DELETE",
+        "/routing-profiles/$(InstanceId)/$(RoutingProfileId)",
         params;
         aws_config=aws_config,
         feature_set=SERVICE_FEATURE_SET,
@@ -3737,6 +3879,58 @@ function disassociate_security_key(
 end
 
 """
+    disassociate_traffic_distribution_group_user(instance_id, traffic_distribution_group_id, user_id)
+    disassociate_traffic_distribution_group_user(instance_id, traffic_distribution_group_id, user_id, params::Dict{String,<:Any})
+
+Disassociates an agent from a traffic distribution group.
+
+# Arguments
+- `instance_id`: The identifier of the Amazon Connect instance. You can find the instance
+  ID in the Amazon Resource Name (ARN) of the instance.
+- `traffic_distribution_group_id`: The identifier of the traffic distribution group. This
+  can be the ID or the ARN if the API is being called in the Region where the traffic
+  distribution group was created. The ARN must be provided if the call is from the replicated
+  Region.
+- `user_id`: The identifier for the user. This can be the ID or the ARN of the user.
+
+"""
+function disassociate_traffic_distribution_group_user(
+    InstanceId,
+    TrafficDistributionGroupId,
+    UserId;
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return connect(
+        "DELETE",
+        "/traffic-distribution-group/$(TrafficDistributionGroupId)/user",
+        Dict{String,Any}("InstanceId" => InstanceId, "UserId" => UserId);
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function disassociate_traffic_distribution_group_user(
+    InstanceId,
+    TrafficDistributionGroupId,
+    UserId,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return connect(
+        "DELETE",
+        "/traffic-distribution-group/$(TrafficDistributionGroupId)/user",
+        Dict{String,Any}(
+            mergewith(
+                _merge,
+                Dict{String,Any}("InstanceId" => InstanceId, "UserId" => UserId),
+                params,
+            ),
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
     dismiss_user_contact(contact_id, instance_id, user_id)
     dismiss_user_contact(contact_id, instance_id, user_id, params::Dict{String,<:Any})
 
@@ -4114,17 +4308,20 @@ definitions in the Amazon Connect Administrator's Guide.
   start time timestamp. It cannot be later than the current timestamp. The time range between
   the start and end time must be less than 24 hours.
 - `filters`: The filters to apply to returned metrics. You can filter on the following
-  resources:   Queues   Routing profiles   Agents   Channels   User hierarchy groups   At
-  least one filter must be passed from queues, routing profiles, agents, or user hierarchy
-  groups. To filter by phone number, see Create a historical metrics report in the Amazon
-  Connect Administrator's Guide. Note the following limits:    Filter keys: A maximum of 5
-  filter keys are supported in a single request. Valid filter keys: QUEUE | ROUTING_PROFILE |
-  AGENT | CHANNEL | AGENT_HIERARCHY_LEVEL_ONE | AGENT_HIERARCHY_LEVEL_TWO |
-  AGENT_HIERARCHY_LEVEL_THREE | AGENT_HIERARCHY_LEVEL_FOUR | AGENT_HIERARCHY_LEVEL_FIVE
-  Filter values: A maximum of 100 filter values are supported in a single request. For
-  example, a GetMetricDataV2 request can filter by 50 queues, 35 agents, and 15 routing
-  profiles for a total of 100 filter values. VOICE, CHAT, and TASK are valid filterValue for
-  the CHANNEL filter key.
+  resources:   Queues   Routing profiles   Agents   Channels   User hierarchy groups
+  Feature   At least one filter must be passed from queues, routing profiles, agents, or user
+  hierarchy groups. To filter by phone number, see Create a historical metrics report in the
+  Amazon Connect Administrator's Guide. Note the following limits:    Filter keys: A maximum
+  of 5 filter keys are supported in a single request. Valid filter keys: QUEUE |
+  ROUTING_PROFILE | AGENT | CHANNEL | AGENT_HIERARCHY_LEVEL_ONE | AGENT_HIERARCHY_LEVEL_TWO |
+  AGENT_HIERARCHY_LEVEL_THREE | AGENT_HIERARCHY_LEVEL_FOUR | AGENT_HIERARCHY_LEVEL_FIVE |
+  FEATURE     Filter values: A maximum of 100 filter values are supported in a single
+  request. VOICE, CHAT, and TASK are valid filterValue for the CHANNEL filter key. They do
+  not count towards limitation of 100 filter values. For example, a GetMetricDataV2 request
+  can filter by 50 queues, 35 agents, and 15 routing profiles for a total of 100 filter
+  values, along with 3 channel filters.   contact_lens_conversational_analytics is a valid
+  filterValue for the FEATURE filter key. It is available only to contacts analyzed by
+  Contact Lens conversational analytics.
 - `metrics`: The metrics to retrieve. Specify the name, groupings, and filters for each
   metric. The following historical metrics are available. For a description of each metric,
   see Historical metrics definitions in the Amazon Connect Administrator's Guide.
@@ -4141,30 +4338,62 @@ definitions in the Amazon Connect Administrator's Guide.
   Valid groupings and filters: Queue, Channel, Routing Profile, Agent, Agent Hierarchy
   AVG_ABANDON_TIME  Unit: Seconds Valid groupings and filters: Queue, Channel, Routing
   Profile, Agent, Agent Hierarchy  AVG_AFTER_CONTACT_WORK_TIME  Unit: Seconds Valid groupings
-  and filters: Queue, Channel, Routing Profile, Agent, Agent Hierarchy
-  AVG_AGENT_CONNECTING_TIME  Unit: Seconds Valid metric filter key: INITIATION_METHOD. For
-  now, this metric only supports the following as INITIATION_METHOD: INBOUND | OUTBOUND |
-  CALLBACK | API  Valid groupings and filters: Queue, Channel, Routing Profile, Agent, Agent
-  Hierarchy  AVG_HANDLE_TIME  Unit: Seconds Valid groupings and filters: Queue, Channel,
-  Routing Profile, Agent, Agent Hierarchy  AVG_HOLD_TIME  Unit: Seconds Valid groupings and
-  filters: Queue, Channel, Routing Profile, Agent, Agent Hierarchy
-  AVG_INTERACTION_AND_HOLD_TIME  Unit: Seconds Valid groupings and filters: Queue, Channel,
-  Routing Profile, Agent, Agent Hierarchy  AVG_INTERACTION_TIME  Unit: Seconds Valid
-  groupings and filters: Queue, Channel, Routing Profile  AVG_QUEUE_ANSWER_TIME  Unit:
-  Seconds Valid groupings and filters: Queue, Channel, Routing Profile  CONTACTS_ABANDONED
-  Unit: Count Valid groupings and filters: Queue, Channel, Routing Profile, Agent, Agent
-  Hierarchy  CONTACTS_CREATED  Unit: Count Valid metric filter key: INITIATION_METHOD  Valid
-  groupings and filters: Queue, Channel, Routing Profile  CONTACTS_HANDLED  Unit: Count Valid
-  metric filter key: INITIATION_METHOD, DISCONNECT_REASON  Valid groupings and filters:
-  Queue, Channel, Routing Profile, Agent, Agent Hierarchy  CONTACTS_HOLD_ABANDONS  Unit:
-  Count Valid groupings and filters: Queue, Channel, Routing Profile, Agent, Agent Hierarchy
+  and filters: Queue, Channel, Routing Profile, Agent, Agent Hierarchy, Feature  Feature is a
+  valid filter but not a valid grouping.   AVG_AGENT_CONNECTING_TIME  Unit: Seconds Valid
+  metric filter key: INITIATION_METHOD. For now, this metric only supports the following as
+  INITIATION_METHOD: INBOUND | OUTBOUND | CALLBACK | API  Valid groupings and filters: Queue,
+  Channel, Routing Profile, Agent, Agent Hierarchy  AVG_AGENT_CONNECTING_TIME  Unit: Seconds
+  Valid metric filter key: INITIATION_METHOD. For now, this metric only supports the
+  following as INITIATION_METHOD: INBOUND | OUTBOUND | CALLBACK | API  Valid groupings and
+  filters: Queue, Channel, Routing Profile, Agent, Agent Hierarchy  AVG_CONTACT_DURATION
+  Unit: Seconds Valid groupings and filters: Queue, Channel, Routing Profile, Agent, Agent
+  Hierarchy, Feature  Feature is a valid filter but not a valid grouping.
+  AVG_CONVERSATION_DURATION  Unit: Seconds Valid groupings and filters: Queue, Channel,
+  Routing Profile, Agent, Agent Hierarchy  AVG_GREETING_TIME_AGENT  This metric is available
+  only for contacts analyzed by Contact Lens conversational analytics. Unit: Seconds Valid
+  groupings and filters: Queue, Channel, Routing Profile, Agent, Agent Hierarchy
+  AVG_HANDLE_TIME  Unit: Seconds Valid groupings and filters: Queue, Channel, Routing
+  Profile, Agent, Agent Hierarchy, Feature  Feature is a valid filter but not a valid
+  grouping.   AVG_HOLD_TIME  Unit: Seconds Valid groupings and filters: Queue, Channel,
+  Routing Profile, Agent, Agent Hierarchy, Feature  Feature is a valid filter but not a valid
+  grouping.   AVG_HOLDS  Unit: Count Valid groupings and filters: Queue, Channel, Routing
+  Profile, Agent, Agent Hierarchy, Feature  Feature is a valid filter but not a valid
+  grouping.   AVG_INTERACTION_AND_HOLD_TIME  Unit: Seconds Valid groupings and filters:
+  Queue, Channel, Routing Profile, Agent, Agent Hierarchy  AVG_INTERACTION_TIME  Unit:
+  Seconds Valid groupings and filters: Queue, Channel, Routing Profile, Feature  Feature is a
+  valid filter but not a valid grouping.   AVG_INTERRUPTIONS_AGENT  This metric is available
+  only for contacts analyzed by Contact Lens conversational analytics. Unit: Count Valid
+  groupings and filters: Queue, Channel, Routing Profile, Agent, Agent Hierarchy
+  AVG_INTERRUPTION_TIME_AGENT  This metric is available only for contacts analyzed by Contact
+  Lens conversational analytics. Unit: Seconds Valid groupings and filters: Queue, Channel,
+  Routing Profile, Agent, Agent Hierarchy  AVG_NON_TALK_TIME  This metric is available only
+  for contacts analyzed by Contact Lens conversational analytics. Unit: Seconds Valid
+  groupings and filters: Queue, Channel, Routing Profile, Agent, Agent Hierarchy
+  AVG_QUEUE_ANSWER_TIME  Unit: Seconds Valid groupings and filters: Queue, Channel, Routing
+  Profile, Feature  Feature is a valid filter but not a valid grouping.   AVG_TALK_TIME  This
+  metric is available only for contacts analyzed by Contact Lens conversational analytics.
+  Unit: Seconds Valid groupings and filters: Queue, Channel, Routing Profile, Agent, Agent
+  Hierarchy  AVG_TALK_TIME_AGENT  This metric is available only for contacts analyzed by
+  Contact Lens conversational analytics. Unit: Seconds Valid groupings and filters: Queue,
+  Channel, Routing Profile, Agent, Agent Hierarchy  AVG_TALK_TIME_CUSTOMER  This metric is
+  available only for contacts analyzed by Contact Lens conversational analytics. Unit:
+  Seconds Valid groupings and filters: Queue, Channel, Routing Profile, Agent, Agent
+  Hierarchy  CONTACTS_ABANDONED  Unit: Count Valid groupings and filters: Queue, Channel,
+  Routing Profile, Agent, Agent Hierarchy  CONTACTS_CREATED  Unit: Count Valid metric filter
+  key: INITIATION_METHOD  Valid groupings and filters: Queue, Channel, Routing Profile,
+  Feature  Feature is a valid filter but not a valid grouping.   CONTACTS_HANDLED  Unit:
+  Count Valid metric filter key: INITIATION_METHOD, DISCONNECT_REASON  Valid groupings and
+  filters: Queue, Channel, Routing Profile, Agent, Agent Hierarchy, Feature  Feature is a
+  valid filter but not a valid grouping.   CONTACTS_HOLD_ABANDONS  Unit: Count Valid
+  groupings and filters: Queue, Channel, Routing Profile, Agent, Agent Hierarchy
   CONTACTS_QUEUED  Unit: Count Valid groupings and filters: Queue, Channel, Routing Profile,
   Agent, Agent Hierarchy  CONTACTS_TRANSFERRED_OUT  Unit: Count Valid groupings and filters:
-  Queue, Channel, Routing Profile, Agent, Agent Hierarchy  CONTACTS_TRANSFERRED_OUT_BY_AGENT
-  Unit: Count Valid groupings and filters: Queue, Channel, Routing Profile, Agent, Agent
-  Hierarchy  CONTACTS_TRANSFERRED_OUT_FROM_QUEUE  Unit: Count Valid groupings and filters:
-  Queue, Channel, Routing Profile, Agent, Agent Hierarchy  MAX_QUEUED_TIME  Unit: Seconds
-  Valid groupings and filters: Queue, Channel, Routing Profile, Agent, Agent Hierarchy
+  Queue, Channel, Routing Profile, Agent, Agent Hierarchy, Feature  Feature is a valid filter
+  but not a valid grouping.   CONTACTS_TRANSFERRED_OUT_BY_AGENT  Unit: Count Valid groupings
+  and filters: Queue, Channel, Routing Profile, Agent, Agent Hierarchy
+  CONTACTS_TRANSFERRED_OUT_FROM_QUEUE  Unit: Count Valid groupings and filters: Queue,
+  Channel, Routing Profile, Agent, Agent Hierarchy  MAX_QUEUED_TIME  Unit: Seconds Valid
+  groupings and filters: Queue, Channel, Routing Profile, Agent, Agent Hierarchy
   SERVICE_LEVEL  You can include up to 20 SERVICE_LEVEL metrics in a request. Unit: Percent
   Valid groupings and filters: Queue, Channel, Routing Profile Threshold: For ThresholdValue,
   enter any whole number from 1 to 604800 (inclusive), in seconds. For Comparison, you must
@@ -5125,7 +5354,10 @@ Lists phone numbers claimed to your Amazon Connect instance or traffic distribut
 If the provided TargetArn is a traffic distribution group, you can call this API in both
 Amazon Web Services Regions associated with traffic distribution group. For more
 information about phone numbers, see Set Up Phone Numbers for Your Contact Center in the
-Amazon Connect Administrator Guide.
+Amazon Connect Administrator Guide.    When given an instance ARN, ListPhoneNumbersV2
+returns only the phone numbers claimed to the instance.   When given a traffic distribution
+group ARN ListPhoneNumbersV2 returns only the phone numbers claimed to the traffic
+distribution group.
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
@@ -5660,6 +5892,48 @@ function list_task_templates(
 end
 
 """
+    list_traffic_distribution_group_users(traffic_distribution_group_id)
+    list_traffic_distribution_group_users(traffic_distribution_group_id, params::Dict{String,<:Any})
+
+Lists traffic distribution group users.
+
+# Arguments
+- `traffic_distribution_group_id`: The identifier of the traffic distribution group. This
+  can be the ID or the ARN if the API is being called in the Region where the traffic
+  distribution group was created. The ARN must be provided if the call is from the replicated
+  Region.
+
+# Optional Parameters
+Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"maxResults"`: The maximum number of results to return per page.
+- `"nextToken"`: The token for the next set of results. Use the value returned in the
+  previous response in the next request to retrieve the next set of results.
+"""
+function list_traffic_distribution_group_users(
+    TrafficDistributionGroupId; aws_config::AbstractAWSConfig=global_aws_config()
+)
+    return connect(
+        "GET",
+        "/traffic-distribution-group/$(TrafficDistributionGroupId)/user";
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function list_traffic_distribution_group_users(
+    TrafficDistributionGroupId,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return connect(
+        "GET",
+        "/traffic-distribution-group/$(TrafficDistributionGroupId)/user",
+        params;
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
     list_traffic_distribution_groups()
     list_traffic_distribution_groups(params::Dict{String,<:Any})
 
@@ -5937,7 +6211,18 @@ number was claimed.  To release phone numbers from a traffic distribution group,
 ReleasePhoneNumber API, not the Amazon Connect console. After releasing a phone number, the
 phone number enters into a cooldown period of 30 days. It cannot be searched for or claimed
 again until the period has ended. If you accidentally release a phone number, contact
-Amazon Web Services Support.
+Amazon Web Services Support.  If you plan to claim and release numbers frequently during a
+30 day period, contact us for a service quota exception. Otherwise, it is possible you will
+be blocked from claiming and releasing any more numbers until 30 days past the oldest
+number released has expired. By default you can claim and release up to 200% of your
+maximum number of active phone numbers during any 30 day period. If you claim and release
+phone numbers using the UI or API during a rolling 30 day cycle that exceeds 200% of your
+phone number service level quota, you will be blocked from claiming any more numbers until
+30 days past the oldest number released has expired.  For example, if you already have 99
+claimed numbers and a service level quota of 99 phone numbers, and in any 30 day period you
+release 99, claim 99, and then release 99, you will have exceeded the 200% limit. At that
+point you are blocked from claiming any more numbers until you open an Amazon Web Services
+support ticket.
 
 # Arguments
 - `phone_number_id`: A unique identifier for the phone number.
@@ -6046,8 +6331,8 @@ end
     resume_contact_recording(contact_id, initial_contact_id, instance_id, params::Dict{String,<:Any})
 
 When a contact is being recorded, and the recording has been suspended using
-SuspendContactRecording, this API resumes recording the call. Only voice recordings are
-supported at this time.
+SuspendContactRecording, this API resumes recording the call or screen. Voice and screen
+recordings are supported.
 
 # Arguments
 - `contact_id`: The identifier of the contact.
@@ -6260,8 +6545,7 @@ end
     search_queues(instance_id)
     search_queues(instance_id, params::Dict{String,<:Any})
 
-This API is in preview release for Amazon Connect and is subject to change. Searches queues
-in an Amazon Connect instance, with optional filtering.
+Searches queues in an Amazon Connect instance, with optional filtering.
 
 # Arguments
 - `instance_id`: The identifier of the Amazon Connect instance. You can find the instance
@@ -6349,11 +6633,55 @@ function search_quick_connects(
 end
 
 """
+    search_resource_tags(instance_id)
+    search_resource_tags(instance_id, params::Dict{String,<:Any})
+
+Searches tags used in an Amazon Connect instance using optional search criteria.
+
+# Arguments
+- `instance_id`: The identifier of the Amazon Connect instance. You can find the instanceId
+  in the Amazon Resource Name (ARN) of the instance.
+
+# Optional Parameters
+Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"MaxResults"`: The maximum number of results to return per page.
+- `"NextToken"`: The token for the next set of results. Use the value returned in the
+  previous response in the next request to retrieve the next set of results.
+- `"ResourceTypes"`: The list of resource types to be used to search tags from. If not
+  provided or if any empty list is provided, this API will search from all supported resource
+  types.
+- `"SearchCriteria"`: The search criteria to be used to return tags.
+"""
+function search_resource_tags(InstanceId; aws_config::AbstractAWSConfig=global_aws_config())
+    return connect(
+        "POST",
+        "/search-resource-tags",
+        Dict{String,Any}("InstanceId" => InstanceId);
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function search_resource_tags(
+    InstanceId,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return connect(
+        "POST",
+        "/search-resource-tags",
+        Dict{String,Any}(
+            mergewith(_merge, Dict{String,Any}("InstanceId" => InstanceId), params)
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
     search_routing_profiles(instance_id)
     search_routing_profiles(instance_id, params::Dict{String,<:Any})
 
-This API is in preview release for Amazon Connect and is subject to change. Searches
-routing profiles in an Amazon Connect instance, with optional filtering.
+Searches routing profiles in an Amazon Connect instance, with optional filtering.
 
 # Arguments
 - `instance_id`: The identifier of the Amazon Connect instance. You can find the instance
@@ -6401,8 +6729,7 @@ end
     search_security_profiles(instance_id)
     search_security_profiles(instance_id, params::Dict{String,<:Any})
 
-This API is in preview release for Amazon Connect and is subject to change. Searches
-security profiles in an Amazon Connect instance, with optional filtering.
+Searches security profiles in an Amazon Connect instance, with optional filtering.
 
 # Arguments
 - `instance_id`: The identifier of the Amazon Connect instance. You can find the instance
@@ -7222,11 +7549,11 @@ end
     suspend_contact_recording(contact_id, initial_contact_id, instance_id)
     suspend_contact_recording(contact_id, initial_contact_id, instance_id, params::Dict{String,<:Any})
 
-When a contact is being recorded, this API suspends recording the call. For example, you
-might suspend the call recording while collecting sensitive information, such as a credit
-card number. Then use ResumeContactRecording to restart recording.  The period of time that
-the recording is suspended is filled with silence in the final recording.  Only voice
-recordings are supported at this time.
+When a contact is being recorded, this API suspends recording the call or screen. For
+example, you might suspend the call or screen recording while collecting sensitive
+information, such as a credit card number. Then use ResumeContactRecording to restart
+recording. The period of time that the recording is suspended is filled with silence in the
+final recording. Voice and screen recordings are supported.
 
 # Arguments
 - `contact_id`: The identifier of the contact.
@@ -7346,7 +7673,7 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   idempotency of the request. If not provided, the Amazon Web Services SDK populates this
   field. For more information about idempotency, see Making retries safe with idempotent APIs.
 - `"QueueId"`: The identifier for the queue.
-- `"UserId"`: The identifier for the user.
+- `"UserId"`: The identifier for the user. This can be the ID or the ARN of the user.
 """
 function transfer_contact(
     ContactFlowId, ContactId, InstanceId; aws_config::AbstractAWSConfig=global_aws_config()
@@ -8418,7 +8745,10 @@ for the OutboundCallerIdNumberId value of the OutboundCallerConfig request body 
 However, if the number is claimed to a traffic distribution group and you are calling this
 API using an instance in the alternate Amazon Web Services Region associated with the
 traffic distribution group, you must provide a full phone number ARN. If a UUID is provided
-in this scenario, you will receive a ResourceNotFoundException.
+in this scenario, you will receive a ResourceNotFoundException. Only use the phone number
+ARN format that doesn't contain instance in the path, for example,
+arn:aws:connect:us-east-1:1234567890:phone-number/uuid. This is the same ARN format that is
+returned when you call the ListPhoneNumbersV2 API.
 
 # Arguments
 - `instance_id`: The identifier of the Amazon Connect instance. You can find the instance
@@ -8589,6 +8919,58 @@ function update_quick_connect_name(
         "POST",
         "/quick-connects/$(InstanceId)/$(QuickConnectId)/name",
         params;
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
+    update_routing_profile_agent_availability_timer(agent_availability_timer, instance_id, routing_profile_id)
+    update_routing_profile_agent_availability_timer(agent_availability_timer, instance_id, routing_profile_id, params::Dict{String,<:Any})
+
+Whether agents with this routing profile will have their routing order calculated based on
+time since their last inbound contact or longest idle time.
+
+# Arguments
+- `agent_availability_timer`: Whether agents with this routing profile will have their
+  routing order calculated based on time since their last inbound contact or longest idle
+  time.
+- `instance_id`: The identifier of the Amazon Connect instance. You can find the instance
+  ID in the Amazon Resource Name (ARN) of the instance.
+- `routing_profile_id`: The identifier of the routing profile.
+
+"""
+function update_routing_profile_agent_availability_timer(
+    AgentAvailabilityTimer,
+    InstanceId,
+    RoutingProfileId;
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return connect(
+        "POST",
+        "/routing-profiles/$(InstanceId)/$(RoutingProfileId)/agent-availability-timer",
+        Dict{String,Any}("AgentAvailabilityTimer" => AgentAvailabilityTimer);
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function update_routing_profile_agent_availability_timer(
+    AgentAvailabilityTimer,
+    InstanceId,
+    RoutingProfileId,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return connect(
+        "POST",
+        "/routing-profiles/$(InstanceId)/$(RoutingProfileId)/agent-availability-timer",
+        Dict{String,Any}(
+            mergewith(
+                _merge,
+                Dict{String,Any}("AgentAvailabilityTimer" => AgentAvailabilityTimer),
+                params,
+            ),
+        );
         aws_config=aws_config,
         feature_set=SERVICE_FEATURE_SET,
     )
@@ -8955,9 +9337,12 @@ end
     update_traffic_distribution(id)
     update_traffic_distribution(id, params::Dict{String,<:Any})
 
-Updates the traffic distribution for a given traffic distribution group.  For more
-information about updating a traffic distribution group, see Update telephony traffic
-distribution across Amazon Web Services Regions  in the Amazon Connect Administrator Guide.
+Updates the traffic distribution for a given traffic distribution group.   You can change
+the SignInConfig only for a default TrafficDistributionGroup. If you call
+UpdateTrafficDistribution with a modified SignInConfig and a non-default
+TrafficDistributionGroup, an InvalidRequestException is returned.  For more information
+about updating a traffic distribution group, see Update telephony traffic distribution
+across Amazon Web Services Regions  in the Amazon Connect Administrator Guide.
 
 # Arguments
 - `id`: The identifier of the traffic distribution group. This can be the ID or the ARN if
@@ -8966,6 +9351,9 @@ distribution across Amazon Web Services Regions  in the Amazon Connect Administr
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"AgentConfig"`: The distribution of agents between the instance and its replica(s).
+- `"SignInConfig"`: The distribution of allowing signing in to the instance and its
+  replica(s).
 - `"TelephonyConfig"`: The distribution of traffic between the instance and its replica(s).
 """
 function update_traffic_distribution(Id; aws_config::AbstractAWSConfig=global_aws_config())

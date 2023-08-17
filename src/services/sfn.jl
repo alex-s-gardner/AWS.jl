@@ -62,14 +62,16 @@ Creates a state machine. A state machine consists of a collection of states that
 work (Task states), determine to which states to transition next (Choice states), stop an
 execution with an error (Fail states), and so on. State machines are specified using a
 JSON-based, structured language. For more information, see Amazon States Language in the
-Step Functions User Guide.  This operation is eventually consistent. The results are best
-effort and may not reflect very recent updates and changes.    CreateStateMachine is an
-idempotent API. Subsequent requests won’t create a duplicate resource if it was already
-created. CreateStateMachine's idempotency check is based on the state machine name,
-definition, type, LoggingConfiguration and TracingConfiguration. If a following request has
-a different roleArn or tags, Step Functions will ignore these differences and treat it as
-an idempotent request of the previous. In this case, roleArn and tags will not be updated,
-even if they are different.
+Step Functions User Guide. If you set the publish parameter of this API action to true, it
+publishes version 1 as the first revision of the state machine.  This operation is
+eventually consistent. The results are best effort and may not reflect very recent updates
+and changes.    CreateStateMachine is an idempotent API. Subsequent requests won’t create
+a duplicate resource if it was already created. CreateStateMachine's idempotency check is
+based on the state machine name, definition, type, LoggingConfiguration, and
+TracingConfiguration. The check is also based on the publish and versionDescription
+parameters. If a following request has a different roleArn or tags, Step Functions will
+ignore these differences and treat it as an idempotent request of the previous. In this
+case, roleArn and tags will not be updated, even if they are different.
 
 # Arguments
 - `definition`: The Amazon States Language definition of the state machine. See Amazon
@@ -85,6 +87,8 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
 - `"loggingConfiguration"`: Defines what execution history events are logged and where they
   are logged.  By default, the level is set to OFF. For more information see Log Levels in
   the Step Functions User Guide.
+- `"publish"`: Set to true to publish the first version of the state machine during
+  creation. The default is false.
 - `"tags"`: Tags to be added when creating a state machine. An array of key-value pairs.
   For more information, see Using Cost Allocation Tags in the Amazon Web Services Billing and
   Cost Management User Guide, and Controlling Access Using IAM Tags. Tags may only contain
@@ -92,6 +96,9 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
 - `"tracingConfiguration"`: Selects whether X-Ray tracing is enabled.
 - `"type"`: Determines whether a Standard or Express state machine is created. The default
   is STANDARD. You cannot update the type of a state machine once it has been created.
+- `"versionDescription"`: Sets description about the state machine version. You can only
+  set the description if the publish parameter is set to true. Otherwise, if you set
+  versionDescription, but publish to false, this API action throws ValidationException.
 """
 function create_state_machine(
     definition, name, roleArn; aws_config::AbstractAWSConfig=global_aws_config()
@@ -117,6 +124,72 @@ function create_state_machine(
                 _merge,
                 Dict{String,Any}(
                     "definition" => definition, "name" => name, "roleArn" => roleArn
+                ),
+                params,
+            ),
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
+    create_state_machine_alias(name, routing_configuration)
+    create_state_machine_alias(name, routing_configuration, params::Dict{String,<:Any})
+
+Creates an alias for a state machine that points to one or two versions of the same state
+machine. You can set your application to call StartExecution with an alias and update the
+version the alias uses without changing the client's code. You can also map an alias to
+split StartExecution requests between two versions of a state machine. To do this, add a
+second RoutingConfig object in the routingConfiguration parameter. You must also specify
+the percentage of execution run requests each version should receive in both RoutingConfig
+objects. Step Functions randomly chooses which version runs a given execution based on the
+percentage you specify. To create an alias that points to a single version, specify a
+single RoutingConfig object with a weight set to 100. You can create up to 100 aliases for
+each state machine. You must delete unused aliases using the DeleteStateMachineAlias API
+action.  CreateStateMachineAlias is an idempotent API. Step Functions bases the idempotency
+check on the stateMachineArn, description, name, and routingConfiguration parameters.
+Requests that contain the same values for these parameters return a successful idempotent
+response without creating a duplicate resource.  Related operations:
+DescribeStateMachineAlias     ListStateMachineAliases     UpdateStateMachineAlias
+DeleteStateMachineAlias
+
+# Arguments
+- `name`: The name of the state machine alias. To avoid conflict with version ARNs, don't
+  use an integer in the name of the alias.
+- `routing_configuration`: The routing configuration of a state machine alias. The routing
+  configuration shifts execution traffic between two state machine versions.
+  routingConfiguration contains an array of RoutingConfig objects that specify up to two
+  state machine versions. Step Functions then randomly choses which version to run an
+  execution with based on the weight assigned to each RoutingConfig.
+
+# Optional Parameters
+Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"description"`: A description for the state machine alias.
+"""
+function create_state_machine_alias(
+    name, routingConfiguration; aws_config::AbstractAWSConfig=global_aws_config()
+)
+    return sfn(
+        "CreateStateMachineAlias",
+        Dict{String,Any}("name" => name, "routingConfiguration" => routingConfiguration);
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function create_state_machine_alias(
+    name,
+    routingConfiguration,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return sfn(
+        "CreateStateMachineAlias",
+        Dict{String,Any}(
+            mergewith(
+                _merge,
+                Dict{String,Any}(
+                    "name" => name, "routingConfiguration" => routingConfiguration
                 ),
                 params,
             ),
@@ -164,15 +237,19 @@ end
     delete_state_machine(state_machine_arn, params::Dict{String,<:Any})
 
 Deletes a state machine. This is an asynchronous operation: It sets the state machine's
-status to DELETING and begins the deletion process.  If the given state machine Amazon
-Resource Name (ARN) is a qualified state machine ARN, it will fail with
-ValidationException. A qualified state machine ARN refers to a Distributed Map state
-defined within a state machine. For example, the qualified state machine ARN
-arn:partition:states:region:account-id:stateMachine:stateMachineName/mapStateLabel refers
-to a Distributed Map state with a label mapStateLabel in the state machine named
-stateMachineName.  For EXPRESS state machines, the deletion will happen eventually (usually
-less than a minute). Running executions may emit logs after DeleteStateMachine API is
-called.
+status to DELETING and begins the deletion process.  A qualified state machine ARN can
+either refer to a Distributed Map state defined within a state machine, a version ARN, or
+an alias ARN. The following are some examples of qualified and unqualified state machine
+ARNs:   The following qualified state machine ARN refers to a Distributed Map state with a
+label mapStateLabel in a state machine named myStateMachine.
+arn:partition:states:region:account-id:stateMachine:myStateMachine/mapStateLabel   If you
+provide a qualified state machine ARN that refers to a Distributed Map state, the request
+fails with ValidationException.    The following unqualified state machine ARN refers to a
+state machine named myStateMachine.
+arn:partition:states:region:account-id:stateMachine:myStateMachine    This API action also
+deletes all versions and aliases associated with a state machine.  For EXPRESS state
+machines, the deletion happens eventually (usually in less than a minute). Running
+executions may emit logs after DeleteStateMachine API is called.
 
 # Arguments
 - `state_machine_arn`: The Amazon Resource Name (ARN) of the state machine to delete.
@@ -198,6 +275,96 @@ function delete_state_machine(
         Dict{String,Any}(
             mergewith(
                 _merge, Dict{String,Any}("stateMachineArn" => stateMachineArn), params
+            ),
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
+    delete_state_machine_alias(state_machine_alias_arn)
+    delete_state_machine_alias(state_machine_alias_arn, params::Dict{String,<:Any})
+
+Deletes a state machine alias. After you delete a state machine alias, you can't use it to
+start executions. When you delete a state machine alias, Step Functions doesn't delete the
+state machine versions that alias references.  Related operations:
+CreateStateMachineAlias     DescribeStateMachineAlias     ListStateMachineAliases
+UpdateStateMachineAlias
+
+# Arguments
+- `state_machine_alias_arn`: The Amazon Resource Name (ARN) of the state machine alias to
+  delete.
+
+"""
+function delete_state_machine_alias(
+    stateMachineAliasArn; aws_config::AbstractAWSConfig=global_aws_config()
+)
+    return sfn(
+        "DeleteStateMachineAlias",
+        Dict{String,Any}("stateMachineAliasArn" => stateMachineAliasArn);
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function delete_state_machine_alias(
+    stateMachineAliasArn,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return sfn(
+        "DeleteStateMachineAlias",
+        Dict{String,Any}(
+            mergewith(
+                _merge,
+                Dict{String,Any}("stateMachineAliasArn" => stateMachineAliasArn),
+                params,
+            ),
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
+    delete_state_machine_version(state_machine_version_arn)
+    delete_state_machine_version(state_machine_version_arn, params::Dict{String,<:Any})
+
+Deletes a state machine version. After you delete a version, you can't call StartExecution
+using that version's ARN or use the version with a state machine alias.  Deleting a state
+machine version won't terminate its in-progress executions.   You can't delete a state
+machine version currently referenced by one or more aliases. Before you delete a version,
+you must either delete the aliases or update them to point to another state machine
+version.   Related operations:     PublishStateMachineVersion     ListStateMachineVersions
+
+
+# Arguments
+- `state_machine_version_arn`: The Amazon Resource Name (ARN) of the state machine version
+  to delete.
+
+"""
+function delete_state_machine_version(
+    stateMachineVersionArn; aws_config::AbstractAWSConfig=global_aws_config()
+)
+    return sfn(
+        "DeleteStateMachineVersion",
+        Dict{String,Any}("stateMachineVersionArn" => stateMachineVersionArn);
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function delete_state_machine_version(
+    stateMachineVersionArn,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return sfn(
+        "DeleteStateMachineVersion",
+        Dict{String,Any}(
+            mergewith(
+                _merge,
+                Dict{String,Any}("stateMachineVersionArn" => stateMachineVersionArn),
+                params,
             ),
         );
         aws_config=aws_config,
@@ -243,12 +410,14 @@ end
     describe_execution(execution_arn)
     describe_execution(execution_arn, params::Dict{String,<:Any})
 
-Provides all information about a state machine execution, such as the state machine
-associated with the execution, the execution input and output, and relevant execution
-metadata. Use this API action to return the Map Run ARN if the execution was dispatched by
-a Map Run.  This operation is eventually consistent. The results are best effort and may
-not reflect very recent updates and changes.  This API action is not supported by EXPRESS
-state machine executions unless they were dispatched by a Map Run.
+Provides information about a state machine execution, such as the state machine associated
+with the execution, the execution input and output, and relevant execution metadata. Use
+this API action to return the Map Run Amazon Resource Name (ARN) if the execution was
+dispatched by a Map Run. If you specify a version or alias ARN when you call the
+StartExecution API action, DescribeExecution returns that ARN.  This operation is
+eventually consistent. The results are best effort and may not reflect very recent updates
+and changes.  Executions of an EXPRESS state machinearen't supported by DescribeExecution
+unless a Map Run dispatched them.
 
 # Arguments
 - `execution_arn`: The Amazon Resource Name (ARN) of the execution to describe.
@@ -316,17 +485,30 @@ end
     describe_state_machine(state_machine_arn, params::Dict{String,<:Any})
 
 Provides information about a state machine's definition, its IAM role Amazon Resource Name
-(ARN), and configuration. If the state machine ARN is a qualified state machine ARN, the
-response returned includes the Map state's label. A qualified state machine ARN refers to a
-Distributed Map state defined within a state machine. For example, the qualified state
-machine ARN
-arn:partition:states:region:account-id:stateMachine:stateMachineName/mapStateLabel refers
-to a Distributed Map state with a label mapStateLabel in the state machine named
-stateMachineName.  This operation is eventually consistent. The results are best effort and
-may not reflect very recent updates and changes.
+(ARN), and configuration. A qualified state machine ARN can either refer to a Distributed
+Map state defined within a state machine, a version ARN, or an alias ARN. The following are
+some examples of qualified and unqualified state machine ARNs:   The following qualified
+state machine ARN refers to a Distributed Map state with a label mapStateLabel in a state
+machine named myStateMachine.
+arn:partition:states:region:account-id:stateMachine:myStateMachine/mapStateLabel   If you
+provide a qualified state machine ARN that refers to a Distributed Map state, the request
+fails with ValidationException.    The following qualified state machine ARN refers to an
+alias named PROD.
+arn:&lt;partition&gt;:states:&lt;region&gt;:&lt;account-id&gt;:stateMachine:&lt;myStateMachi
+ne:PROD&gt;   If you provide a qualified state machine ARN that refers to a version ARN or
+an alias ARN, the request starts execution for that version or alias.    The following
+unqualified state machine ARN refers to a state machine named myStateMachine.
+arn:&lt;partition&gt;:states:&lt;region&gt;:&lt;account-id&gt;:stateMachine:&lt;myStateMachi
+ne&gt;    This API action returns the details for a state machine version if the
+stateMachineArn you specify is a state machine version ARN.  This operation is eventually
+consistent. The results are best effort and may not reflect very recent updates and
+changes.
 
 # Arguments
-- `state_machine_arn`: The Amazon Resource Name (ARN) of the state machine to describe.
+- `state_machine_arn`: The Amazon Resource Name (ARN) of the state machine for which you
+  want the information. If you specify a state machine version ARN, this API returns details
+  about that version. The version ARN is a combination of state machine ARN and the version
+  number separated by a colon (:). For example, stateMachineARN:1.
 
 """
 function describe_state_machine(
@@ -357,15 +539,56 @@ function describe_state_machine(
 end
 
 """
+    describe_state_machine_alias(state_machine_alias_arn)
+    describe_state_machine_alias(state_machine_alias_arn, params::Dict{String,<:Any})
+
+Returns details about a state machine alias.  Related operations:
+CreateStateMachineAlias     ListStateMachineAliases     UpdateStateMachineAlias
+DeleteStateMachineAlias
+
+# Arguments
+- `state_machine_alias_arn`: The Amazon Resource Name (ARN) of the state machine alias.
+
+"""
+function describe_state_machine_alias(
+    stateMachineAliasArn; aws_config::AbstractAWSConfig=global_aws_config()
+)
+    return sfn(
+        "DescribeStateMachineAlias",
+        Dict{String,Any}("stateMachineAliasArn" => stateMachineAliasArn);
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function describe_state_machine_alias(
+    stateMachineAliasArn,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return sfn(
+        "DescribeStateMachineAlias",
+        Dict{String,Any}(
+            mergewith(
+                _merge,
+                Dict{String,Any}("stateMachineAliasArn" => stateMachineAliasArn),
+                params,
+            ),
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
     describe_state_machine_for_execution(execution_arn)
     describe_state_machine_for_execution(execution_arn, params::Dict{String,<:Any})
 
 Provides information about a state machine's definition, its execution role ARN, and
-configuration. If an execution was dispatched by a Map Run, the Map Run is returned in the
-response. Additionally, the state machine returned will be the state machine associated
-with the Map Run.  This operation is eventually consistent. The results are best effort and
-may not reflect very recent updates and changes.  This API action is not supported by
-EXPRESS state machines.
+configuration. If a Map Run dispatched the execution, this action returns the Map Run
+Amazon Resource Name (ARN) in the response. The state machine returned is the state machine
+associated with the Map Run.  This operation is eventually consistent. The results are best
+effort and may not reflect very recent updates and changes.  This API action is not
+supported by EXPRESS state machines.
 
 # Arguments
 - `execution_arn`: The Amazon Resource Name (ARN) of the execution you want state machine
@@ -540,14 +763,15 @@ end
 
 Lists all executions of a state machine or a Map Run. You can list all executions related
 to a state machine by specifying a state machine Amazon Resource Name (ARN), or those
-related to a Map Run by specifying a Map Run ARN. Results are sorted by time, with the most
-recent execution first. If nextToken is returned, there are more results available. The
-value of nextToken is a unique pagination token for each page. Make the call again using
-the returned token to retrieve the next page. Keep all other arguments unchanged. Each
-pagination token expires after 24 hours. Using an expired pagination token will return an
-HTTP 400 InvalidToken error.  This operation is eventually consistent. The results are best
-effort and may not reflect very recent updates and changes.  This API action is not
-supported by EXPRESS state machines.
+related to a Map Run by specifying a Map Run ARN. You can also provide a state machine
+alias ARN or version ARN to list the executions associated with a specific alias or
+version. Results are sorted by time, with the most recent execution first. If nextToken is
+returned, there are more results available. The value of nextToken is a unique pagination
+token for each page. Make the call again using the returned token to retrieve the next
+page. Keep all other arguments unchanged. Each pagination token expires after 24 hours.
+Using an expired pagination token will return an HTTP 400 InvalidToken error.  This
+operation is eventually consistent. The results are best effort and may not reflect very
+recent updates and changes.  This API action is not supported by EXPRESS state machines.
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
@@ -566,7 +790,9 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   pagination token expires after 24 hours. Using an expired pagination token will return an
   HTTP 400 InvalidToken error.
 - `"stateMachineArn"`: The Amazon Resource Name (ARN) of the state machine whose executions
-  is listed. You can specify either a mapRunArn or a stateMachineArn, but not both.
+  is listed. You can specify either a mapRunArn or a stateMachineArn, but not both. You can
+  also return a list of executions associated with a specific alias or version, by specifying
+  an alias ARN or a version ARN in the stateMachineArn parameter.
 - `"statusFilter"`: If specified, only list the executions whose current execution status
   matches the given filter.
 """
@@ -622,6 +848,118 @@ function list_map_runs(
         "ListMapRuns",
         Dict{String,Any}(
             mergewith(_merge, Dict{String,Any}("executionArn" => executionArn), params)
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
+    list_state_machine_aliases(state_machine_arn)
+    list_state_machine_aliases(state_machine_arn, params::Dict{String,<:Any})
+
+Lists aliases for a specified state machine ARN. Results are sorted by time, with the most
+recently created aliases listed first.  To list aliases that reference a state machine
+version, you can specify the version ARN in the stateMachineArn parameter. If nextToken is
+returned, there are more results available. The value of nextToken is a unique pagination
+token for each page. Make the call again using the returned token to retrieve the next
+page. Keep all other arguments unchanged. Each pagination token expires after 24 hours.
+Using an expired pagination token will return an HTTP 400 InvalidToken error.  Related
+operations:     CreateStateMachineAlias     DescribeStateMachineAlias
+UpdateStateMachineAlias     DeleteStateMachineAlias
+
+# Arguments
+- `state_machine_arn`: The Amazon Resource Name (ARN) of the state machine for which you
+  want to list aliases. If you specify a state machine version ARN, this API returns a list
+  of aliases for that version.
+
+# Optional Parameters
+Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"maxResults"`: The maximum number of results that are returned per call. You can use
+  nextToken to obtain further pages of results. The default is 100 and the maximum allowed
+  page size is 1000. A value of 0 uses the default. This is only an upper limit. The actual
+  number of results returned per call might be fewer than the specified maximum.
+- `"nextToken"`: If nextToken is returned, there are more results available. The value of
+  nextToken is a unique pagination token for each page. Make the call again using the
+  returned token to retrieve the next page. Keep all other arguments unchanged. Each
+  pagination token expires after 24 hours. Using an expired pagination token will return an
+  HTTP 400 InvalidToken error.
+"""
+function list_state_machine_aliases(
+    stateMachineArn; aws_config::AbstractAWSConfig=global_aws_config()
+)
+    return sfn(
+        "ListStateMachineAliases",
+        Dict{String,Any}("stateMachineArn" => stateMachineArn);
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function list_state_machine_aliases(
+    stateMachineArn,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return sfn(
+        "ListStateMachineAliases",
+        Dict{String,Any}(
+            mergewith(
+                _merge, Dict{String,Any}("stateMachineArn" => stateMachineArn), params
+            ),
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
+    list_state_machine_versions(state_machine_arn)
+    list_state_machine_versions(state_machine_arn, params::Dict{String,<:Any})
+
+Lists versions for the specified state machine Amazon Resource Name (ARN). The results are
+sorted in descending order of the version creation time. If nextToken is returned, there
+are more results available. The value of nextToken is a unique pagination token for each
+page. Make the call again using the returned token to retrieve the next page. Keep all
+other arguments unchanged. Each pagination token expires after 24 hours. Using an expired
+pagination token will return an HTTP 400 InvalidToken error.  Related operations:
+PublishStateMachineVersion     DeleteStateMachineVersion
+
+# Arguments
+- `state_machine_arn`: The Amazon Resource Name (ARN) of the state machine.
+
+# Optional Parameters
+Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"maxResults"`: The maximum number of results that are returned per call. You can use
+  nextToken to obtain further pages of results. The default is 100 and the maximum allowed
+  page size is 1000. A value of 0 uses the default. This is only an upper limit. The actual
+  number of results returned per call might be fewer than the specified maximum.
+- `"nextToken"`: If nextToken is returned, there are more results available. The value of
+  nextToken is a unique pagination token for each page. Make the call again using the
+  returned token to retrieve the next page. Keep all other arguments unchanged. Each
+  pagination token expires after 24 hours. Using an expired pagination token will return an
+  HTTP 400 InvalidToken error.
+"""
+function list_state_machine_versions(
+    stateMachineArn; aws_config::AbstractAWSConfig=global_aws_config()
+)
+    return sfn(
+        "ListStateMachineVersions",
+        Dict{String,Any}("stateMachineArn" => stateMachineArn);
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function list_state_machine_versions(
+    stateMachineArn,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return sfn(
+        "ListStateMachineVersions",
+        Dict{String,Any}(
+            mergewith(
+                _merge, Dict{String,Any}("stateMachineArn" => stateMachineArn), params
+            ),
         );
         aws_config=aws_config,
         feature_set=SERVICE_FEATURE_SET,
@@ -693,6 +1031,63 @@ function list_tags_for_resource(
         "ListTagsForResource",
         Dict{String,Any}(
             mergewith(_merge, Dict{String,Any}("resourceArn" => resourceArn), params)
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
+    publish_state_machine_version(state_machine_arn)
+    publish_state_machine_version(state_machine_arn, params::Dict{String,<:Any})
+
+Creates a version from the current revision of a state machine. Use versions to create
+immutable snapshots of your state machine. You can start executions from versions either
+directly or with an alias. To create an alias, use CreateStateMachineAlias. You can publish
+up to 1000 versions for each state machine. You must manually delete unused versions using
+the DeleteStateMachineVersion API action.  PublishStateMachineVersion is an idempotent API.
+It doesn't create a duplicate state machine version if it already exists for the current
+revision. Step Functions bases PublishStateMachineVersion's idempotency check on the
+stateMachineArn, name, and revisionId parameters. Requests with the same parameters return
+a successful idempotent response. If you don't specify a revisionId, Step Functions checks
+for a previously published version of the state machine's current revision.  Related
+operations:     DeleteStateMachineVersion     ListStateMachineVersions
+
+# Arguments
+- `state_machine_arn`: The Amazon Resource Name (ARN) of the state machine.
+
+# Optional Parameters
+Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"description"`: An optional description of the state machine version.
+- `"revisionId"`: Only publish the state machine version if the current state machine's
+  revision ID matches the specified ID. Use this option to avoid publishing a version if the
+  state machine changed since you last updated it. If the specified revision ID doesn't match
+  the state machine's current revision ID, the API returns ConflictException.  To specify an
+  initial revision ID for a state machine with no revision ID assigned, specify the string
+  INITIAL for the revisionId parameter. For example, you can specify a revisionID of INITIAL
+  when you create a state machine using the CreateStateMachine API action.
+"""
+function publish_state_machine_version(
+    stateMachineArn; aws_config::AbstractAWSConfig=global_aws_config()
+)
+    return sfn(
+        "PublishStateMachineVersion",
+        Dict{String,Any}("stateMachineArn" => stateMachineArn);
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function publish_state_machine_version(
+    stateMachineArn,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return sfn(
+        "PublishStateMachineVersion",
+        Dict{String,Any}(
+            mergewith(
+                _merge, Dict{String,Any}("stateMachineArn" => stateMachineArn), params
+            ),
         );
         aws_config=aws_config,
         feature_set=SERVICE_FEATURE_SET,
@@ -832,21 +1227,49 @@ end
     start_execution(state_machine_arn)
     start_execution(state_machine_arn, params::Dict{String,<:Any})
 
-Starts a state machine execution. If the given state machine Amazon Resource Name (ARN) is
-a qualified state machine ARN, it will fail with ValidationException. A qualified state
-machine ARN refers to a Distributed Map state defined within a state machine. For example,
-the qualified state machine ARN
-arn:partition:states:region:account-id:stateMachine:stateMachineName/mapStateLabel refers
-to a Distributed Map state with a label mapStateLabel in the state machine named
-stateMachineName.   StartExecution is idempotent for STANDARD workflows. For a STANDARD
-workflow, if StartExecution is called with the same name and input as a running execution,
-the call will succeed and return the same response as the original request. If the
-execution is closed or if the input is different, it will return a 400
-ExecutionAlreadyExists error. Names can be reused after 90 days.   StartExecution is not
+Starts a state machine execution. A qualified state machine ARN can either refer to a
+Distributed Map state defined within a state machine, a version ARN, or an alias ARN. The
+following are some examples of qualified and unqualified state machine ARNs:   The
+following qualified state machine ARN refers to a Distributed Map state with a label
+mapStateLabel in a state machine named myStateMachine.
+arn:partition:states:region:account-id:stateMachine:myStateMachine/mapStateLabel   If you
+provide a qualified state machine ARN that refers to a Distributed Map state, the request
+fails with ValidationException.    The following qualified state machine ARN refers to an
+alias named PROD.
+arn:&lt;partition&gt;:states:&lt;region&gt;:&lt;account-id&gt;:stateMachine:&lt;myStateMachi
+ne:PROD&gt;   If you provide a qualified state machine ARN that refers to a version ARN or
+an alias ARN, the request starts execution for that version or alias.    The following
+unqualified state machine ARN refers to a state machine named myStateMachine.
+arn:&lt;partition&gt;:states:&lt;region&gt;:&lt;account-id&gt;:stateMachine:&lt;myStateMachi
+ne&gt;    If you start an execution with an unqualified state machine ARN, Step Functions
+uses the latest revision of the state machine for the execution. To start executions of a
+state machine version, call StartExecution and provide the version ARN or the ARN of an
+alias that points to the version.   StartExecution is idempotent for STANDARD workflows.
+For a STANDARD workflow, if you call StartExecution with the same name and input as a
+running execution, the call succeeds and return the same response as the original request.
+If the execution is closed or if the input is different, it returns a 400
+ExecutionAlreadyExists error. You can reuse names after 90 days.   StartExecution isn't
 idempotent for EXPRESS workflows.
 
 # Arguments
-- `state_machine_arn`: The Amazon Resource Name (ARN) of the state machine to execute.
+- `state_machine_arn`: The Amazon Resource Name (ARN) of the state machine to execute. The
+  stateMachineArn parameter accepts one of the following inputs:    An unqualified state
+  machine ARN – Refers to a state machine ARN that isn't qualified with a version or alias
+  ARN. The following is an example of an unqualified state machine ARN.
+  arn:&lt;partition&gt;:states:&lt;region&gt;:&lt;account-id&gt;:stateMachine:&lt;myStateMachi
+  ne&gt;  Step Functions doesn't associate state machine executions that you start with an
+  unqualified ARN with a version. This is true even if that version uses the same revision
+  that the execution used.    A state machine version ARN – Refers to a version ARN, which
+  is a combination of state machine ARN and the version number separated by a colon (:). The
+  following is an example of the ARN for version 10.
+  arn:&lt;partition&gt;:states:&lt;region&gt;:&lt;account-id&gt;:stateMachine:&lt;myStateMachi
+  ne&gt;:10  Step Functions doesn't associate executions that you start with a version ARN
+  with any aliases that point to that version.    A state machine alias ARN – Refers to an
+  alias ARN, which is a combination of state machine ARN and the alias name separated by a
+  colon (:). The following is an example of the ARN for an alias named PROD.
+  arn:&lt;partition&gt;:states:&lt;region&gt;:&lt;account-id&gt;:stateMachine:&lt;myStateMachi
+  ne:PROD&gt;  Step Functions associates executions that you start with an alias ARN with
+  that alias and the state machine version used for that execution.
 
 # Optional Parameters
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
@@ -854,8 +1277,8 @@ Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys 
   \"input\": \"{\"first_name\" : \"test\"}\"   If you don't include any JSON input data, you
   still must include the two braces, for example: \"input\": \"{}\"   Length constraints
   apply to the payload size, and are expressed as bytes in UTF-8 encoding.
-- `"name"`: The name of the execution. This name must be unique for your Amazon Web
-  Services account, region, and state machine for 90 days. For more information, see  Limits
+- `"name"`: Optional name of the execution. This name must be unique for your Amazon Web
+  Services account, Region, and state machine for 90 days. For more information, see  Limits
   Related to State Machine Executions in the Step Functions Developer Guide. A name must not
   contain:   white space   brackets &lt; &gt; { } [ ]    wildcard characters ? *    special
   characters \" # %  ^ | ~ `  &amp; , ; : /    control characters (U+0000-001F, U+007F-009F)
@@ -1111,15 +1534,30 @@ end
 Updates an existing state machine by modifying its definition, roleArn, or
 loggingConfiguration. Running executions will continue to use the previous definition and
 roleArn. You must include at least one of definition or roleArn or you will receive a
-MissingRequiredParameter error. If the given state machine Amazon Resource Name (ARN) is a
-qualified state machine ARN, it will fail with ValidationException. A qualified state
-machine ARN refers to a Distributed Map state defined within a state machine. For example,
-the qualified state machine ARN
+MissingRequiredParameter error. A qualified state machine ARN refers to a Distributed Map
+state defined within a state machine. For example, the qualified state machine ARN
 arn:partition:states:region:account-id:stateMachine:stateMachineName/mapStateLabel refers
 to a Distributed Map state with a label mapStateLabel in the state machine named
-stateMachineName.  All StartExecution calls within a few seconds will use the updated
-definition and roleArn. Executions started immediately after calling UpdateStateMachine may
-use the previous state machine definition and roleArn.
+stateMachineName. A qualified state machine ARN can either refer to a Distributed Map state
+defined within a state machine, a version ARN, or an alias ARN. The following are some
+examples of qualified and unqualified state machine ARNs:   The following qualified state
+machine ARN refers to a Distributed Map state with a label mapStateLabel in a state machine
+named myStateMachine.
+arn:partition:states:region:account-id:stateMachine:myStateMachine/mapStateLabel   If you
+provide a qualified state machine ARN that refers to a Distributed Map state, the request
+fails with ValidationException.    The following qualified state machine ARN refers to an
+alias named PROD.
+arn:&lt;partition&gt;:states:&lt;region&gt;:&lt;account-id&gt;:stateMachine:&lt;myStateMachi
+ne:PROD&gt;   If you provide a qualified state machine ARN that refers to a version ARN or
+an alias ARN, the request starts execution for that version or alias.    The following
+unqualified state machine ARN refers to a state machine named myStateMachine.
+arn:&lt;partition&gt;:states:&lt;region&gt;:&lt;account-id&gt;:stateMachine:&lt;myStateMachi
+ne&gt;    After you update your state machine, you can set the publish parameter to true in
+the same action to publish a new version. This way, you can opt-in to strict versioning of
+your state machine.  Step Functions assigns monotonically increasing integers for state
+machine versions, starting at version number 1.   All StartExecution calls within a few
+seconds use the updated definition and roleArn. Executions started immediately after you
+call UpdateStateMachine may use the previous state machine definition and roleArn.
 
 # Arguments
 - `state_machine_arn`: The Amazon Resource Name (ARN) of the state machine.
@@ -1128,10 +1566,14 @@ use the previous state machine definition and roleArn.
 Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
 - `"definition"`: The Amazon States Language definition of the state machine. See Amazon
   States Language.
-- `"loggingConfiguration"`: The LoggingConfiguration data type is used to set CloudWatch
-  Logs options.
+- `"loggingConfiguration"`: Use the LoggingConfiguration data type to set CloudWatch Logs
+  options.
+- `"publish"`: Specifies whether the state machine version is published. The default is
+  false. To publish a version after updating the state machine, set publish to true.
 - `"roleArn"`: The Amazon Resource Name (ARN) of the IAM role of the state machine.
 - `"tracingConfiguration"`: Selects whether X-Ray tracing is enabled.
+- `"versionDescription"`: An optional description of the state machine version to publish.
+  You can only specify the versionDescription parameter if you've set publish to true.
 """
 function update_state_machine(
     stateMachineArn; aws_config::AbstractAWSConfig=global_aws_config()
@@ -1153,6 +1595,60 @@ function update_state_machine(
         Dict{String,Any}(
             mergewith(
                 _merge, Dict{String,Any}("stateMachineArn" => stateMachineArn), params
+            ),
+        );
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+
+"""
+    update_state_machine_alias(state_machine_alias_arn)
+    update_state_machine_alias(state_machine_alias_arn, params::Dict{String,<:Any})
+
+Updates the configuration of an existing state machine alias by modifying its description
+or routingConfiguration. You must specify at least one of the description or
+routingConfiguration parameters to update a state machine alias.   UpdateStateMachineAlias
+is an idempotent API. Step Functions bases the idempotency check on the
+stateMachineAliasArn, description, and routingConfiguration parameters. Requests with the
+same parameters return an idempotent response.   This operation is eventually consistent.
+All StartExecution requests made within a few seconds use the latest alias configuration.
+Executions started immediately after calling UpdateStateMachineAlias may use the previous
+routing configuration.   Related operations:     CreateStateMachineAlias
+DescribeStateMachineAlias     ListStateMachineAliases     DeleteStateMachineAlias
+
+# Arguments
+- `state_machine_alias_arn`: The Amazon Resource Name (ARN) of the state machine alias.
+
+# Optional Parameters
+Optional parameters can be passed as a `params::Dict{String,<:Any}`. Valid keys are:
+- `"description"`: A description of the state machine alias.
+- `"routingConfiguration"`: The routing configuration of the state machine alias. An array
+  of RoutingConfig objects that specifies up to two state machine versions that the alias
+  starts executions for.
+"""
+function update_state_machine_alias(
+    stateMachineAliasArn; aws_config::AbstractAWSConfig=global_aws_config()
+)
+    return sfn(
+        "UpdateStateMachineAlias",
+        Dict{String,Any}("stateMachineAliasArn" => stateMachineAliasArn);
+        aws_config=aws_config,
+        feature_set=SERVICE_FEATURE_SET,
+    )
+end
+function update_state_machine_alias(
+    stateMachineAliasArn,
+    params::AbstractDict{String};
+    aws_config::AbstractAWSConfig=global_aws_config(),
+)
+    return sfn(
+        "UpdateStateMachineAlias",
+        Dict{String,Any}(
+            mergewith(
+                _merge,
+                Dict{String,Any}("stateMachineAliasArn" => stateMachineAliasArn),
+                params,
             ),
         );
         aws_config=aws_config,
